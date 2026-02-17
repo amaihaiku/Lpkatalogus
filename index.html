@@ -120,6 +120,8 @@
       margin: 12px 0;
     }
 
+    .viewfinder { display: none !important; }
+
     /* Buttons */
     button, .btn{
       appearance:none;
@@ -270,6 +272,21 @@
       width:100%;
       min-height:360px;
     }
+/* html5-qrcode videó láthatóság fix */
+#qr-reader {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  position: relative;
+}
+
+#qr-reader video,
+#qr-reader canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  display: block !important;
+}
 
     /* Overlay viewfinder */
     .viewfinder{
@@ -1056,6 +1073,18 @@ async function discogsGetRelease(id) {
           }
         );
 
+        // iOS/Safari: inline video attribútumok (fekete kép / nincs render tipikus oka)
+setTimeout(() => {
+  const v = document.querySelector("#qr-reader video");
+  if (v) {
+    v.setAttribute("playsinline", "true");
+    v.setAttribute("webkit-playsinline", "true");
+    v.muted = true;
+    v.autoplay = true;
+  }
+}, 200);
+
+        
         setPill("Beolvasás");
         scheduleOcrFallback();
       }
