@@ -742,7 +742,43 @@
      * CONFIG
      ************************************************************/
     // TODO: Add your token here (Discogs Personal Access Token)
-    const DISCOGS_TOKEN = "PASTE_YOUR_DISCOGS_TOKEN_HERE";
+    // Proxy endpoint a saját Vercel domaineden
+const DISCOGS_PROXY = "/api/discogs";
+
+async function proxyFetch(endpoint) {
+  const url = new URL(DISCOGS_PROXY, window.location.origin);
+  url.searchParams.set("endpoint", endpoint);
+  const res = await fetch(url.toString(), { method: "GET" });
+  if (!res.ok) {
+    const t = await res.text().catch(()=> "");
+    throw new Error("Proxy/Discogs hiba (" + res.status + "): " + t.slice(0, 180));
+  }
+  return await res.json();
+}
+
+async function discogsSearchByBarcode(barcode) {
+  const params = new URLSearchParams({
+    barcode,
+    type: "release",
+    per_page: "5"
+  });
+  // endpoint: database/search?...
+  return proxyFetch("database/search?" + params.toString());
+}
+
+async function discogsSearchByCatno(catno) {
+  const params = new URLSearchParams({
+    catno,
+    type: "release",
+    per_page: "5"
+  });
+  return proxyFetch("database/search?" + params.toString());
+}
+
+async function discogsGetRelease(id) {
+  return proxyFetch("releases/" + encodeURIComponent(id));
+}
+
 
     const LS_KEY = "lp_catalog_v1_records";
 
