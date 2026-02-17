@@ -8,8 +8,6 @@
 
   <!-- PWA manifest (place manifest.json next to this file) -->
   <link rel="manifest" href="manifest.json" />
-
-  <!-- Optional: iOS add-to-home icon support (provide these files if you want) -->
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
   <!-- External libs (allowed per spec) -->
@@ -33,26 +31,6 @@
       --focus: 0 0 0 3px rgba(212,175,55,.28);
     }
 
-#qr-reader {
-  width: 100%;
-  height: 100%;
-  min-height: 360px;
-  position: relative;
-}
-
-#qr-reader video,
-#qr-reader canvas {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  display: block !important;
-}
-
-
-    .viewfinder { display: none !important; }
-
-
-    
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -64,7 +42,6 @@
       text-rendering: optimizeLegibility;
     }
 
-    /* Layout */
     .app{
       min-height:100%;
       padding-bottom: calc(var(--navH) + env(safe-area-inset-bottom));
@@ -115,7 +92,6 @@
     .pill strong{color:var(--text); font-weight:600}
     .hidden{display:none !important}
 
-    /* Cards */
     .card{
       background:var(--card);
       border:1px solid rgba(255,255,255,.06);
@@ -140,9 +116,6 @@
       margin: 12px 0;
     }
 
-    .viewfinder { display: none !important; }
-
-    /* Buttons */
     button, .btn{
       appearance:none;
       border:0;
@@ -179,7 +152,6 @@
       display:flex; gap:10px; flex-wrap:wrap;
     }
 
-    /* Inputs */
     label{
       display:block;
       font-size: 12px;
@@ -208,7 +180,6 @@
       .grid2{grid-template-columns: 1fr;}
     }
 
-    /* Startup Vinyl */
     .startup{
       display:flex;
       flex-direction:column;
@@ -269,7 +240,6 @@
       gap: 10px;
     }
 
-    /* Scanner */
     .scannerWrap{
       display:grid;
       grid-template-columns: 1.2fr .8fr;
@@ -287,28 +257,23 @@
       background:#0b0b0b;
       min-height: 360px;
     }
-    /* html5-qrcode injects video/canvas; keep it responsive */
+
+    /* IMPORTANT: make injected video/canvas actually visible & sized */
     #qr-reader{
       width:100%;
+      height:100%;
       min-height:360px;
+      position:relative;
     }
-/* html5-qrcode videó láthatóság fix */
-#qr-reader {
-  width: 100%;
-  height: 100%;
-  min-height: 360px;
-  position: relative;
-}
+    #qr-reader video,
+    #qr-reader canvas{
+      width:100% !important;
+      height:100% !important;
+      object-fit:cover;
+      display:block !important;
+    }
 
-#qr-reader video,
-#qr-reader canvas {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  display: block !important;
-}
-
-    /* Overlay viewfinder */
+    /* Viewfinder overlay (non-blocking, avoids huge box-shadow) */
     .viewfinder{
       pointer-events:none;
       position:absolute;
@@ -317,12 +282,19 @@
       align-items:center;
       justify-content:center;
     }
+    .vf-dim{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.22);
+      mask: radial-gradient(circle at 50% 50%, transparent 0 190px, black 200px);
+      -webkit-mask: radial-gradient(circle at 50% 50%, transparent 0 190px, black 200px);
+    }
     .vf-box{
       width: min(72%, 320px);
       aspect-ratio: 1 / 1;
       border-radius: 18px;
       border: 2px solid rgba(212,175,55,.75);
-      box-shadow: 0 0 0 9999px rgba(0,0,0,.35);
+      box-shadow: 0 0 22px rgba(212,175,55,.12);
       position:relative;
     }
     .vf-box:before{
@@ -332,6 +304,7 @@
       height:1px;
       background: rgba(212,175,55,.35);
     }
+
     .status{
       display:flex;
       flex-direction:column;
@@ -357,7 +330,6 @@
     .badge.ok{ border-color: rgba(57,217,138,.35); }
     .badge.warn{ border-color: rgba(255,91,91,.35); }
 
-    /* Preview card */
     .preview{
       display:flex;
       gap:12px;
@@ -390,7 +362,6 @@
       line-height:1.4;
     }
 
-    /* Collection grid */
     .collectionGrid{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
@@ -440,7 +411,6 @@
       text-overflow:ellipsis;
     }
 
-    /* Bottom nav */
     nav.bottom{
       position:fixed;
       left:0; right:0; bottom:0;
@@ -485,7 +455,6 @@
       background: rgba(212,175,55,.08);
     }
 
-    /* Modal */
     .modalBackdrop{
       position:fixed;
       inset:0;
@@ -522,7 +491,6 @@
       flex-wrap:wrap;
     }
 
-    /* Toast */
     .toast{
       position: fixed;
       left: 50%;
@@ -558,9 +526,7 @@
         </div>
       </header>
 
-      <!-- Views -->
       <main>
-        <!-- HOME -->
         <section id="view-home">
           <div class="card section startup">
             <div class="vinyl" aria-hidden="true"></div>
@@ -575,14 +541,16 @@
           </div>
         </section>
 
-        <!-- SCAN -->
         <section id="view-scan" class="hidden">
           <div class="card section">
             <h2>Beolvasás</h2>
             <div class="scannerWrap">
               <div class="reader" aria-label="Kamera olvasó">
                 <div id="qr-reader"></div>
-                <div class="viewfinder"><div class="vf-box" id="vfBox"></div></div>
+                <div class="viewfinder">
+                  <div class="vf-dim" aria-hidden="true"></div>
+                  <div class="vf-box" aria-hidden="true"></div>
+                </div>
               </div>
 
               <div class="status">
@@ -600,7 +568,7 @@
                   </div>
                 </div>
 
-                <div class="card section" id="previewCard" class="hidden">
+                <div class="card section hidden" id="previewCard">
                   <h2>Előnézet</h2>
                   <div class="preview">
                     <div class="cover" id="previewCover"></div>
@@ -643,7 +611,6 @@
           </div>
         </section>
 
-        <!-- COLLECTION -->
         <section id="view-collection" class="hidden">
           <div class="card section">
             <h2>Gyűjteményem</h2>
@@ -664,17 +631,15 @@
           </div>
         </section>
 
-        <!-- SETTINGS -->
         <section id="view-settings" class="hidden">
           <div class="card section">
             <h2>Beállítások</h2>
 
             <div class="card section" style="margin-top:0; background:rgba(255,255,255,.03); box-shadow:none;">
-              <h2>Discogs</h2>
+              <h2>Discogs token</h2>
               <p style="margin:0; color:var(--muted); font-size:13px; line-height:1.5;">
-                A Discogs lekérdezésekhez add meg a saját tokened a kódban:
-                <span class="mono">const DISCOGS_TOKEN = "..."</span>.
-                Kameraengedélyhez mobilon HTTPS szükséges.
+                A token <strong>nem</strong> az index.html-ben van. Vercel-ben állítsd be környezeti változóként:
+                <span class="mono">DISCOGS_TOKEN</span>. A kliens a <span class="mono">/api/discogs</span> proxyt hívja.
               </p>
             </div>
 
@@ -692,7 +657,6 @@
     </div>
   </div>
 
-  <!-- Bottom Nav -->
   <nav class="bottom" aria-label="Alsó navigáció">
     <div class="navInner">
       <button class="navBtn active" id="navHome" aria-label="Kezdőlap">
@@ -718,7 +682,6 @@
     </div>
   </nav>
 
-  <!-- Modal (edit) -->
   <div id="modalBackdrop" class="modalBackdrop hidden" role="dialog" aria-modal="true" aria-label="Szerkesztés">
     <div class="card modal">
       <div class="modalHeader">
@@ -775,78 +738,17 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
-    /************************************************************
-     * CONFIG
-     ************************************************************/
-    // TODO: Add your token here (Discogs Personal Access Token)
-    // Proxy endpoint a saját Vercel domaineden
-const DISCOGS_PROXY = "/api/discogs";
-
-async function proxyFetch(endpoint) {
-  const url = new URL(DISCOGS_PROXY, window.location.origin);
-  url.searchParams.set("endpoint", endpoint);
-  const res = await fetch(url.toString(), { method: "GET" });
-  if (!res.ok) {
-    const t = await res.text().catch(()=> "");
-    throw new Error("Proxy/Discogs hiba (" + res.status + "): " + t.slice(0, 180));
-  }
-  return await res.json();
-}
-
-async function discogsSearchByBarcode(barcode) {
-  const params = new URLSearchParams({
-    barcode,
-    type: "release",
-    per_page: "5"
-  });
-  // endpoint: database/search?...
-  return proxyFetch("database/search?" + params.toString());
-}
-
-async function discogsSearchByCatno(catno) {
-  const params = new URLSearchParams({
-    catno,
-    type: "release",
-    per_page: "5"
-  });
-  return proxyFetch("database/search?" + params.toString());
-}
-
-async function discogsGetRelease(id) {
-  return proxyFetch("releases/" + encodeURIComponent(id));
-}
-
-
     const LS_KEY = "lp_catalog_v1_records";
-
-    // OCR patterns (examples requested: SLPX, LPX, SLPM + digits)
-    // Allows optional spaces/hyphens between letters and digits.
     const CATNO_REGEX = /\b(?:SLPX|LPX|SLPM)\s*[-]?\s*\d{2,6}\b/gi;
+    const DISCOGS_PROXY = "/api/discogs";
 
-    // Discogs endpoints
-    const DISCOGS_SEARCH = "https://api.discogs.com/database/search";
-    const DISCOGS_RELEASE = "https://api.discogs.com/releases"; // /{id}
-
-    /************************************************************
-     * STATE
-     ************************************************************/
     const state = {
       view: "home",
-      scanner: {
-        running: false,
-        html5: null,
-        ocrTimer: null,
-        barcodeFound: false,
-        lastCode: null,
-        lastSource: null,
-      },
-      preview: null,     // normalized record from Discogs
+      scanner: { running:false, html5:null, ocrTimer:null, barcodeFound:false, lastCode:null, lastSource:null },
+      preview: null,
       editingId: null,
     };
 
-    /************************************************************
-     * DOM HELPERS
-     ************************************************************/
     const $ = (sel) => document.querySelector(sel);
 
     const views = {
@@ -862,9 +764,7 @@ async function discogsGetRelease(id) {
       settings: $("#navSettings"),
     };
 
-    function setPill(text){
-      $("#pillStateText").textContent = text;
-    }
+    function setPill(text){ $("#pillStateText").textContent = text; }
 
     function toast(msg, ms=2200){
       const t = $("#toast");
@@ -876,40 +776,21 @@ async function discogsGetRelease(id) {
 
     function setView(name){
       state.view = name;
-      for (const k of Object.keys(views)){
-        views[k].classList.toggle("hidden", k !== name);
-      }
-      for (const k of Object.keys(navBtns)){
-        navBtns[k].classList.toggle("active", k === name);
-      }
-      // View-specific refresh
+      for (const k of Object.keys(views)) views[k].classList.toggle("hidden", k !== name);
+      for (const k of Object.keys(navBtns)) navBtns[k].classList.toggle("active", k === name);
       if (name === "collection") renderCollection();
-      if (name !== "scan") stopScan(); // safety
+      if (name !== "scan") stopScan();
     }
 
-    /************************************************************
-     * STORAGE
-     ************************************************************/
     function loadRecords(){
       try{
         const raw = localStorage.getItem(LS_KEY);
         const arr = raw ? JSON.parse(raw) : [];
         return Array.isArray(arr) ? arr : [];
-      }catch{
-        return [];
-      }
+      }catch{ return []; }
     }
-
-    function saveRecords(arr){
-      localStorage.setItem(LS_KEY, JSON.stringify(arr));
-    }
-
-    function addRecord(rec){
-      const all = loadRecords();
-      all.unshift(rec);
-      saveRecords(all);
-    }
-
+    function saveRecords(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+    function addRecord(rec){ const all = loadRecords(); all.unshift(rec); saveRecords(all); }
     function updateRecord(id, patch){
       const all = loadRecords();
       const idx = all.findIndex(x => x.id === id);
@@ -918,56 +799,25 @@ async function discogsGetRelease(id) {
       saveRecords(all);
       return true;
     }
+    function deleteRecord(id){ saveRecords(loadRecords().filter(x => x.id !== id)); }
 
-    function deleteRecord(id){
-      const all = loadRecords().filter(x => x.id !== id);
-      saveRecords(all);
-    }
-
-    /************************************************************
-     * NORMALIZATION (Discogs -> app record)
-     ************************************************************/
     function normalizeDiscogsRelease(release, fallbackCatno=""){
-      // release.artists can be array; join names
-      const artist = (release.artists || [])
-        .map(a => a?.name)
-        .filter(Boolean)
-        .join(", ")
-        .replace(/\s+\(\d+\)$/, "") || (release.artist || "");
-
+      const artist = (release.artists || []).map(a=>a?.name).filter(Boolean).join(", ").replace(/\s+\(\d+\)$/, "") || (release.artist || "");
       const title = release.title || "Ismeretlen cím";
       const year = release.year ? String(release.year) : "";
-      const label = (release.labels || [])
-        .map(l => l?.name)
-        .filter(Boolean)
-        .slice(0,2)
-        .join(", ");
-
-      const catno = (release.labels || [])
-        .map(l => l?.catno)
-        .filter(Boolean)
-        .find(Boolean) || fallbackCatno || "";
-
-      const cover = release.images?.find(i => i.type === "primary")?.uri
-        || release.images?.[0]?.uri
-        || release.thumb
-        || "";
-
+      const label = (release.labels || []).map(l=>l?.name).filter(Boolean).slice(0,2).join(", ");
+      const catno = (release.labels || []).map(l=>l?.catno).filter(Boolean).find(Boolean) || fallbackCatno || "";
+      const cover = release.images?.find(i => i.type === "primary")?.uri || release.images?.[0]?.uri || release.thumb || "";
       return {
         id: crypto.randomUUID(),
         discogsReleaseId: release.id || null,
-        artist,
-        title,
-        year,
-        label,
-        catno,
+        artist, title, year, label, catno,
         grade: "NM",
         coverUrl: cover,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
     }
-
     function summarizeRec(rec){
       const parts = [];
       if (rec.year) parts.push(rec.year);
@@ -977,51 +827,28 @@ async function discogsGetRelease(id) {
       return parts.join(" • ") || "—";
     }
 
-    /************************************************************
-     * DISCOGS API
-     ************************************************************/
-    function discogsHeaders(){
-      const h = {
-        "Accept": "application/vnd.discogs.v2+json",
-      };
-      // Discogs supports token in Authorization: Discogs token=...
-      if (DISCOGS_TOKEN && !DISCOGS_TOKEN.includes("PASTE_")){
-        h["Authorization"] = "Discogs token=" + DISCOGS_TOKEN;
+    async function proxyFetch(endpoint){
+      const url = new URL(DISCOGS_PROXY, window.location.origin);
+      url.searchParams.set("endpoint", endpoint);
+      const res = await fetch(url.toString(), { method:"GET" });
+      if (!res.ok){
+        const t = await res.text().catch(()=> "");
+        throw new Error("Proxy/Discogs hiba (" + res.status + "): " + t.slice(0,180));
       }
-      return h;
+      return await res.json();
     }
-
     async function discogsSearchByBarcode(barcode){
-      const url = new URL(DISCOGS_SEARCH);
-      url.searchParams.set("barcode", barcode);
-      url.searchParams.set("type", "release");
-      url.searchParams.set("per_page", "5");
-
-      const res = await fetch(url.toString(), { headers: discogsHeaders() });
-      if (!res.ok) throw new Error("Discogs keresési hiba ("+res.status+")");
-      return await res.json();
+      const params = new URLSearchParams({ barcode, type:"release", per_page:"5" });
+      return proxyFetch("database/search?" + params.toString());
     }
-
     async function discogsSearchByCatno(catno){
-      const url = new URL(DISCOGS_SEARCH);
-      url.searchParams.set("catno", catno);
-      url.searchParams.set("type", "release");
-      url.searchParams.set("per_page", "5");
-
-      const res = await fetch(url.toString(), { headers: discogsHeaders() });
-      if (!res.ok) throw new Error("Discogs keresési hiba ("+res.status+")");
-      return await res.json();
+      const params = new URLSearchParams({ catno, type:"release", per_page:"5" });
+      return proxyFetch("database/search?" + params.toString());
     }
-
     async function discogsGetRelease(id){
-      const res = await fetch(`${DISCOGS_RELEASE}/${id}`, { headers: discogsHeaders() });
-      if (!res.ok) throw new Error("Discogs release hiba ("+res.status+")");
-      return await res.json();
+      return proxyFetch("releases/" + encodeURIComponent(id));
     }
 
-    /************************************************************
-     * SCANNING (html5-qrcode + OCR fallback)
-     ************************************************************/
     async function startScan(){
       if (state.scanner.running) return;
       setView("scan");
@@ -1030,51 +857,35 @@ async function discogsGetRelease(id) {
       $("#previewCard").classList.add("hidden");
       state.preview = null;
 
-      // Reset scan state
       state.scanner.running = true;
       state.scanner.barcodeFound = false;
-      state.scanner.lastCode = null;
-      state.scanner.lastSource = null;
       $("#foundCode").textContent = "—";
       $("#foundSource").textContent = "—";
       $("#ocrBadge").textContent = "Készenlétben";
       $("#ocrBadge").className = "badge";
 
-      // Init html5-qrcode
-      const readerId = "qr-reader";
-      $("#"+readerId).innerHTML = ""; // clean
-
-      const html5 = new Html5Qrcode(readerId);
+      $("#qr-reader").innerHTML = "";
+      const html5 = new Html5Qrcode("qr-reader");
       state.scanner.html5 = html5;
 
-      // Prefer back camera
       const config = {
         fps: 12,
-        qrbox: { width: 260, height: 260 }, // viewfinder-ish
+        qrbox: { width: 260, height: 260 },
         aspectRatio: 1.0,
         experimentalFeatures: { useBarCodeDetectorIfSupported: true },
       };
 
       try{
-        // Try to list cameras; if fails, start with constraints
-        const devices = await Html5Qrcode.getCameras().catch(()=>[]);
-        const backCam = devices.find(d => /back|rear|environment/i.test(d.label));
-        const camId = backCam ? backCam.id : (devices[0]?.id ?? null);
-
-        const camera = camId ? { deviceId: { exact: camId } } : { facingMode: "environment" };
+        const camera = { facingMode: "environment" };
 
         await html5.start(
           camera,
           config,
-          async (decodedText, decodedResult) => {
-            // html5-qrcode can return QR/other barcodes; we only want EAN-13-like numeric strings
+          async (decodedText) => {
             const cleaned = String(decodedText || "").replace(/\s/g, "");
-            const isEan13 = /^\d{13}$/.test(cleaned);
-            if (!isEan13) return;
+            if (!/^\d{13}$/.test(cleaned)) return;
 
             state.scanner.barcodeFound = true;
-            state.scanner.lastCode = cleaned;
-            state.scanner.lastSource = "Vonalkód";
             $("#foundCode").textContent = cleaned;
             $("#foundSource").textContent = "Vonalkód";
             $("#ocrBadge").textContent = "Nem szükséges";
@@ -1082,47 +893,36 @@ async function discogsGetRelease(id) {
 
             toast("Vonalkód észlelve: " + cleaned);
 
-            // Stop scanning immediately (prevents repeated callbacks)
             await stopScan(true);
-
-            // Fetch Discogs by barcode
             await fetchAndPreview({ barcode: cleaned });
           },
-          (err) => {
-            // decode errors are noisy; ignore
-          }
+          () => {}
         );
 
-        // iOS/Safari: inline video attribútumok (fekete kép / nincs render tipikus oka)
-setTimeout(() => {
-  const v = document.querySelector("#qr-reader video");
-  if (v) {
-    v.setAttribute("playsinline", "true");
-    v.setAttribute("webkit-playsinline", "true");
-    v.muted = true;
-    v.autoplay = true;
-  }
-}, 200);
+        setTimeout(() => {
+          const v = document.querySelector("#qr-reader video");
+          if (v){
+            v.setAttribute("playsinline","true");
+            v.setAttribute("webkit-playsinline","true");
+            v.muted = true;
+            v.autoplay = true;
+          }
+        }, 600);
 
-        
         setPill("Beolvasás");
         scheduleOcrFallback();
+      }catch(e){
+        console.error("Kamera indítás hiba:", e);
+        setPill("Hiba");
+        toast("Kamera hiba: " + (e?.name || "") + " — " + (e?.message || e));
+        state.scanner.running = false;
       }
-      catch(e){
-  console.error("Kamera indítás hiba:", e);
-  setPill("Hiba");
-  toast("Kamera hiba: " + (e?.name || "") + " — " + (e?.message || e));
-  state.scanner.running = false;
-}
-
     }
 
     function scheduleOcrFallback(){
-      // If no barcode within 2-3 seconds, run OCR on viewfinder crop
       window.clearTimeout(state.scanner.ocrTimer);
       state.scanner.ocrTimer = window.setTimeout(async ()=>{
-        if (!state.scanner.running) return;
-        if (state.scanner.barcodeFound) return;
+        if (!state.scanner.running || state.scanner.barcodeFound) return;
         $("#ocrBadge").textContent = "OCR fut…";
         $("#ocrBadge").className = "badge gold";
         setPill("OCR…");
@@ -1133,25 +933,21 @@ setTimeout(() => {
             $("#ocrBadge").textContent = "Nincs találat";
             $("#ocrBadge").className = "badge warn";
             setPill("Beolvasás");
-            // reschedule lightly (optional); keep it conservative to avoid battery drain
             state.scanner.ocrTimer = window.setTimeout(scheduleOcrFallback, 1200);
             return;
           }
 
-          state.scanner.lastCode = catno;
-          state.scanner.lastSource = "OCR";
           $("#foundCode").textContent = catno;
           $("#foundSource").textContent = "OCR";
           $("#ocrBadge").textContent = "Találat";
           $("#ocrBadge").className = "badge ok";
+
           toast("Katalógusszám észlelve: " + catno);
 
-          // Stop camera; proceed with Discogs
           await stopScan(true);
           await fetchAndPreview({ catno });
-
         }catch(e){
-          console.error(e);
+          console.error("OCR hiba:", e);
           $("#ocrBadge").textContent = "OCR hiba";
           $("#ocrBadge").className = "badge warn";
           setPill("Beolvasás");
@@ -1165,12 +961,7 @@ setTimeout(() => {
 
       const html5 = state.scanner.html5;
       if (html5){
-        try{
-          const isRunning = html5.getState && html5.getState() === Html5QrcodeScannerState?.SCANNING;
-          // Above constant may not exist across builds; just attempt stop
-          await html5.stop().catch(()=>{});
-          await html5.clear().catch(()=>{});
-        }catch{}
+        try{ await html5.stop().catch(()=>{}); await html5.clear().catch(()=>{}); }catch{}
       }
       state.scanner.html5 = null;
       state.scanner.running = false;
@@ -1178,75 +969,44 @@ setTimeout(() => {
       setPill("Készen");
     }
 
-    function getInjectedVideoEl(){
-      // html5-qrcode injects <video> into #qr-reader
-      return $("#qr-reader video");
-    }
+    function getInjectedVideoEl(){ return document.querySelector("#qr-reader video"); }
 
     async function runOcrForCatno(){
       const video = getInjectedVideoEl();
       if (!video || video.readyState < 2) return null;
 
-      // Compute crop area that roughly matches our viewfinder box (center square)
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
+      const vw = video.videoWidth, vh = video.videoHeight;
       if (!vw || !vh) return null;
 
-      const cropSize = Math.floor(Math.min(vw, vh) * 0.62); // match vf box ~72% of container; tune
+      const cropSize = Math.floor(Math.min(vw, vh) * 0.62);
       const sx = Math.floor((vw - cropSize) / 2);
       const sy = Math.floor((vh - cropSize) / 2);
 
       const canvas = document.createElement("canvas");
-      canvas.width = cropSize;
-      canvas.height = cropSize;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      canvas.width = cropSize; canvas.height = cropSize;
+      const ctx = canvas.getContext("2d", { willReadFrequently:true });
       ctx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, cropSize, cropSize);
 
-      // Optional: mild contrast boost (cheap) for OCR
       const imgData = ctx.getImageData(0,0,cropSize,cropSize);
       const d = imgData.data;
       for (let i=0;i<d.length;i+=4){
-        // grayscale + contrast
         const g = (0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
         const c = Math.min(255, Math.max(0, (g - 128) * 1.2 + 128));
         d[i]=d[i+1]=d[i+2]=c;
       }
       ctx.putImageData(imgData,0,0);
 
-      const dataUrl = canvas.toDataURL("image/png");
-
-      // OCR
-      const result = await Tesseract.recognize(dataUrl, "eng", {
-        logger: (m) => {
-          // You can surface progress if desired:
-          // console.log(m)
-        }
-      });
-
+      const result = await Tesseract.recognize(canvas.toDataURL("image/png"), "eng", { logger: ()=>{} });
       const text = (result?.data?.text || "").toUpperCase();
       const matches = text.match(CATNO_REGEX);
-      if (!matches || !matches.length) return null;
-
-      // pick the first plausible
-      const catno = matches[0].replace(/\s+/g," ").trim();
-      return catno;
+      if (!matches?.length) return null;
+      return matches[0].replace(/\s+/g," ").trim();
     }
 
-    /************************************************************
-     * PREVIEW + SAVE
-     ************************************************************/
     async function fetchAndPreview({ barcode=null, catno=null }){
       try{
         setPill("Discogs…");
-        let search;
-        if (barcode) {
-          search = await discogsSearchByBarcode(barcode);
-        } else if (catno) {
-          search = await discogsSearchByCatno(catno);
-        } else {
-          throw new Error("Nincs keresési kulcs.");
-        }
-
+        const search = barcode ? await discogsSearchByBarcode(barcode) : await discogsSearchByCatno(catno);
         const best = search?.results?.[0];
         if (!best){
           toast("Nincs Discogs találat.");
@@ -1254,26 +1014,27 @@ setTimeout(() => {
           return;
         }
 
-        // Discogs search result may include "id" for release/master; prefer release if possible.
-        // If result is master, you might want /masters/:id — for simplicity: if it lacks release id, still try releases/:id.
-        const releaseId = best.id;
-        const release = await discogsGetRelease(releaseId);
-
+        const release = await discogsGetRelease(best.id);
         const normalized = normalizeDiscogsRelease(release, catno || "");
-        // if barcode used, keep catno field editable but start with best guess
         $("#catnoInput").value = normalized.catno || (catno || "");
         $("#gradeSelect").value = "NM";
 
         state.preview = normalized;
-
         renderPreview(normalized);
         $("#previewCard").classList.remove("hidden");
         setPill("Előnézet");
       }catch(e){
         console.error(e);
-        toast("Discogs hiba. Ellenőrizd a tokened és a hálózatot.");
+        toast("Discogs hiba: ellenőrizd a /api/discogs proxyt és a Vercel DISCOGS_TOKEN env var-t.");
         setPill("Készen");
       }
+    }
+
+    function escapeHtmlAttr(s){
+      return String(s).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+    function escapeHtmlText(s){
+      return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
     }
 
     function renderPreview(rec){
@@ -1283,23 +1044,11 @@ setTimeout(() => {
       $("#previewDetails").textContent = summarizeRec(rec);
     }
 
-    function escapeHtmlAttr(s){
-      return String(s)
-        .replaceAll("&","&amp;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;");
-    }
-
     $("#btnApproveSave").addEventListener("click", ()=>{
       if (!state.preview) return;
-
       const grade = $("#gradeSelect").value;
       const catno = ($("#catnoInput").value || "").trim();
-
-      const rec = { ...state.preview, grade, catno };
-      addRecord(rec);
-
+      addRecord({ ...state.preview, grade, catno });
       toast("Mentve a gyűjteménybe.");
       state.preview = null;
       $("#previewCard").classList.add("hidden");
@@ -1310,12 +1059,8 @@ setTimeout(() => {
       state.preview = null;
       $("#previewCard").classList.add("hidden");
       toast("Előnézet elutasítva.");
-      // stay on scan view; user can retry
     });
 
-    /************************************************************
-     * COLLECTION RENDER + EDIT
-     ************************************************************/
     function renderCollection(){
       const all = loadRecords();
       const empty = $("#collectionEmpty");
@@ -1332,7 +1077,7 @@ setTimeout(() => {
       grid.classList.remove("hidden");
 
       grid.innerHTML = all.map(rec => `
-        <div class="card item" data-id="${escapeHtmlAttr(rec.id)}" role="button" tabindex="0" aria-label="Szerkesztés megnyitása">
+        <div class="card item" data-id="${escapeHtmlAttr(rec.id)}" role="button" tabindex="0">
           <div class="thumb">${rec.coverUrl ? `<img alt="Borító" src="${escapeHtmlAttr(rec.coverUrl)}" />` : ""}</div>
           <div class="t">
             <div class="a">${escapeHtmlText(rec.artist || "—")}</div>
@@ -1342,7 +1087,6 @@ setTimeout(() => {
         </div>
       `).join("");
 
-      // Click handlers
       grid.querySelectorAll("[data-id]").forEach(el=>{
         const open = ()=>openEdit(el.getAttribute("data-id"));
         el.addEventListener("click", open);
@@ -1350,17 +1094,9 @@ setTimeout(() => {
       });
     }
 
-    function escapeHtmlText(s){
-      return String(s)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;");
-    }
-
     function openEdit(id){
       const rec = loadRecords().find(x => x.id === id);
       if (!rec) return;
-
       state.editingId = id;
 
       $("#editArtist").value = rec.artist || "";
@@ -1369,37 +1105,26 @@ setTimeout(() => {
       $("#editLabel").value = rec.label || "";
       $("#editCatno").value = rec.catno || "";
       $("#editGrade").value = rec.grade || "NM";
-
       $("#modalBackdrop").classList.remove("hidden");
     }
-
-    function closeModal(){
-      $("#modalBackdrop").classList.add("hidden");
-      state.editingId = null;
-    }
+    function closeModal(){ $("#modalBackdrop").classList.add("hidden"); state.editingId = null; }
 
     $("#btnCloseModal").addEventListener("click", closeModal);
-    $("#modalBackdrop").addEventListener("click", (e)=>{
-      if (e.target === $("#modalBackdrop")) closeModal();
-    });
+    $("#modalBackdrop").addEventListener("click", (e)=>{ if (e.target === $("#modalBackdrop")) closeModal(); });
 
     $("#btnSaveEdit").addEventListener("click", ()=>{
       const id = state.editingId;
       if (!id) return;
-
-      const patch = {
+      updateRecord(id, {
         artist: $("#editArtist").value.trim(),
         title: $("#editTitle").value.trim(),
         year: $("#editYear").value.trim(),
         label: $("#editLabel").value.trim(),
         catno: $("#editCatno").value.trim(),
         grade: $("#editGrade").value,
-      };
-
-      updateRecord(id, patch);
+      });
       toast("Módosítások mentve.");
-      closeModal();
-      renderCollection();
+      closeModal(); renderCollection();
     });
 
     $("#btnDeleteOne").addEventListener("click", ()=>{
@@ -1407,8 +1132,7 @@ setTimeout(() => {
       if (!id) return;
       deleteRecord(id);
       toast("Törölve.");
-      closeModal();
-      renderCollection();
+      closeModal(); renderCollection();
     });
 
     $("#btnClearAll").addEventListener("click", ()=>{
@@ -1418,9 +1142,6 @@ setTimeout(() => {
       renderCollection();
     });
 
-    /************************************************************
-     * CSV EXPORT + WEB SHARE
-     ************************************************************/
     function toCsv(records){
       const headers = ["Előadó","Cím","Év","Kiadó","Katalógusszám","Állapot","DiscogsReleaseId","BorítóURL","Létrehozva","Módosítva"];
       const rows = records.map(r => ([
@@ -1428,7 +1149,6 @@ setTimeout(() => {
       ]).map(csvEscape).join(","));
       return headers.join(",") + "\n" + rows.join("\n");
     }
-
     function csvEscape(v){
       const s = (v ?? "").toString().replaceAll("\r"," ").replaceAll("\n"," ");
       if (/[",]/.test(s)) return `"${s.replaceAll('"','""')}"`;
@@ -1437,81 +1157,48 @@ setTimeout(() => {
 
     $("#btnExportCsv").addEventListener("click", async ()=>{
       const records = loadRecords();
-      if (!records.length){
-        toast("Nincs mit exportálni.");
-        return;
-      }
-
+      if (!records.length){ toast("Nincs mit exportálni."); return; }
       const csv = toCsv(records);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
       const fileName = `lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.csv`;
 
       try{
-        // Web Share API with file (mobile-friendly)
-        if (navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: blob.type })] })){
-          const file = new File([blob], fileName, { type: blob.type });
+        if (navigator.canShare && navigator.canShare({ files:[new File([blob], fileName, { type: blob.type })] })){
           await navigator.share({
             title: "LP Gyűjtemény (CSV)",
             text: "LP gyűjtemény export CSV formátumban.",
-            files: [file],
+            files: [new File([blob], fileName, { type: blob.type })],
           });
           toast("Megosztás elindítva.");
           return;
         }
-      }catch(e){
-        // user canceled share - no need to treat as error
-      }
+      }catch(e){}
 
-      // Fallback: download
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
       toast("CSV letöltve.");
     });
 
-    /************************************************************
-     * NAV + UI EVENTS
-     ************************************************************/
     $("#btnStartScan").addEventListener("click", startScan);
     $("#btnGoCollection").addEventListener("click", ()=>setView("collection"));
-
     $("#btnStopScan").addEventListener("click", ()=>stopScan(false));
-    $("#btnRetry").addEventListener("click", ()=>{
-      // restart scan quickly
-      stopScan(true).finally(()=>startScan());
-    });
+    $("#btnRetry").addEventListener("click", ()=>{ stopScan(true).finally(()=>startScan()); });
 
     navBtns.home.addEventListener("click", ()=>setView("home"));
     navBtns.collection.addEventListener("click", ()=>setView("collection"));
     navBtns.settings.addEventListener("click", ()=>setView("settings"));
 
-    /************************************************************
-     * PWA: SERVICE WORKER REG
-     ************************************************************/
     window.addEventListener("load", async ()=>{
-      // Render collection once to ensure correct empty state
       renderCollection();
-
       if ("serviceWorker" in navigator){
-        try{
-          await navigator.serviceWorker.register("./sw.js");
-        }catch(e){
-          // silent
-        }
+        try{ await navigator.serviceWorker.register("./sw.js"); }catch{}
       }
     });
 
-    /************************************************************
-     * SAFETY: stop camera when tab hidden
-     ************************************************************/
-    document.addEventListener("visibilitychange", ()=>{
-      if (document.hidden) stopScan(true);
-    });
+    document.addEventListener("visibilitychange", ()=>{ if (document.hidden) stopScan(true); });
   </script>
 </body>
 </html>
