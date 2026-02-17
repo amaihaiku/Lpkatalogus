@@ -1058,12 +1058,14 @@ async function discogsGetRelease(id) {
 
         setPill("Beolvasás");
         scheduleOcrFallback();
-      }catch(e){
-        console.error(e);
-        setPill("Hiba");
-        toast("Kamera nem indítható. Ellenőrizd a HTTPS-t és az engedélyeket.");
-        state.scanner.running = false;
       }
+      catch(e){
+  console.error("Kamera indítás hiba:", e);
+  setPill("Hiba");
+  toast("Kamera hiba: " + (e?.name || "") + " — " + (e?.message || e));
+  state.scanner.running = false;
+}
+
     }
 
     function scheduleOcrFallback(){
