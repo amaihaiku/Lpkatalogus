@@ -29,9 +29,9 @@
       #landscapeOverlay{display:flex !important;}
     }
 
-    .app{min-height:100vh;padding-bottom:calc(var(--navH) + env(safe-area-inset-bottom));display:flex;justify-content:center}
-    .container{width:100%;max-width:var(--maxW);padding:18px 16px 22px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px 6px}
+    .app{height:100dvh;height:100vh;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+    .container{width:100%;max-width:var(--maxW);padding:0 16px;flex:1;display:flex;flex-direction:column;min-height:0;padding-bottom:calc(var(--navH) + env(safe-area-inset-bottom))}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px 6px;flex-shrink:0}
     .brand{display:flex;align-items:center;gap:10px}
     .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 22px rgba(212,175,55,.65)}
     .brand h1{margin:0;font-size:16px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
@@ -55,7 +55,7 @@
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media (max-width:640px){.grid2{grid-template-columns:1fr}}
 
-    .startup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - var(--navH) - 100px);padding:22px 10px;gap:18px}
+    .startup{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:22px 10px;gap:18px;overflow-y:auto}
     .vinyl{width:220px;height:220px;position:relative;border-radius:50%;background:
       radial-gradient(circle at 50% 50%, rgba(212,175,55,.95) 0 8px, transparent 9px),
       radial-gradient(circle at 50% 50%, rgba(0,0,0,.0) 0 40px, rgba(0,0,0,.45) 41px),
@@ -70,10 +70,8 @@
     .startup .cta{width:min(420px,100%);display:flex;flex-direction:column;gap:10px}
 
     /* Scanner – négyzetes kamera, no-scroll */
-    .scannerWrap{display:flex;flex-direction:column;gap:12px}
-    /* A scan section maga ne scrolloljon – flexbox tölti ki a maradék helyet */
-    #view-scan{display:flex;flex-direction:column;height:calc(100vh - var(--navH) - env(safe-area-inset-bottom) - 56px);overflow:hidden}
-    #view-scan .card.section{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:0}
+    #view-scan{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+    #view-scan .card.section{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:8px;min-height:0}
     #view-scan .card.section > h2{flex-shrink:0}
     .scannerWrap{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:10px}
     /* Négyzetes kamera: szélesség = magasság */
@@ -101,9 +99,9 @@
     .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
     .meta p{margin:0;color:var(--muted);font-size:12px;line-height:1.4}
 
-    /* Gyűjtemény – fix nav, scrollozható lista */
-    #view-collection{display:flex;flex-direction:column;height:calc(100vh - var(--navH) - env(safe-area-inset-bottom) - 56px);overflow:hidden}
-    #view-collection .card.section{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:0}
+    /* Gyűjtemény – scrollozható lista */
+    #view-collection{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+    #view-collection .card.section{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:8px;min-height:0}
     #view-collection .card.section > h2{flex-shrink:0}
     .coll-toolbar{display:flex;gap:8px;flex-shrink:0;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto}
     .coll-toolbar button{white-space:nowrap;flex-shrink:0;padding:10px 12px;font-size:13px}
@@ -176,10 +174,10 @@
         <div class="pill" id="pillState"><span>Állapot:</span> <strong id="pillStateText">Készen</strong></div>
       </header>
 
-      <main>
+      <main style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
         <!-- Főoldal -->
-        <section id="view-home">
-          <div class="card section startup">
+        <section id="view-home" style="flex:1;display:flex;flex-direction:column;overflow-y:auto">
+          <div class="card section startup" style="flex:1;margin-top:8px">
             <div class="vinyl" aria-hidden="true"></div>
             <p>Katalógusépítés elegánsan: <strong>vonalkód</strong> elsőbbséggel, és ha kell <strong>OCR</strong> katalógusszámra. Mentés előtt mindig kapsz <strong>előnézetet</strong>.</p>
             <div class="cta">
@@ -194,7 +192,7 @@
         </section>
 
         <!-- Beolvasás -->
-        <section id="view-scan" class="hidden">
+        <section id="view-scan" class="hidden" style="flex:1;min-height:0">
           <div class="card section">
             <h2>Beolvasás</h2>
             <div class="scannerWrap">
@@ -259,7 +257,7 @@
         </section>
 
         <!-- Gyűjtemény -->
-        <section id="view-collection" class="hidden">
+        <section id="view-collection" class="hidden" style="flex:1;min-height:0">
           <div class="card section">
             <h2 style="flex-shrink:0">Gyűjteményem</h2>
             <div class="coll-toolbar">
@@ -742,7 +740,7 @@
       toast("A megosztás nem elérhető ezen az eszközön. Próbálj egy másik böngészőt.");
     }
 
-    function exportPdf(){
+    async function exportPdf(){
       const records=loadRecords();
       if(!records.length){toast("Nincs mit exportálni.");return;}
       const rows=records.map(r=>`
