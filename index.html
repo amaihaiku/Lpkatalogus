@@ -14,9 +14,21 @@
       --danger:#ff5b5b; --ok:#39d98a; --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.45);
       --navH:72px; --maxW:980px; --focus:0 0 0 3px rgba(212,175,55,.28);
     }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
-    .app{min-height:100%;padding-bottom:calc(var(--navH) + env(safe-area-inset-bottom));display:flex;justify-content:center}
+    *{box-sizing:border-box} html,body{height:100%;margin:0}
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+
+    /* Fekvő mód overlay */
+    #landscapeOverlay{
+      display:none;position:fixed;inset:0;z-index:9999;
+      background:var(--bg);
+      align-items:center;justify-content:center;flex-direction:column;gap:24px;
+    }
+    #landscapeOverlay p{margin:0;font-size:15px;color:var(--muted);text-align:center;max-width:260px;line-height:1.6}
+    @media (orientation:landscape) and (max-width:900px){
+      #landscapeOverlay{display:flex !important;}
+    }
+
+    .app{min-height:100vh;padding-bottom:calc(var(--navH) + env(safe-area-inset-bottom));display:flex;justify-content:center}
     .container{width:100%;max-width:var(--maxW);padding:18px 16px 22px}
     header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px 6px}
     .brand{display:flex;align-items:center;gap:10px}
@@ -33,13 +45,15 @@
     button:focus-visible{outline:none;box-shadow:var(--shadow),var(--focus)}
     .btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(212,175,55,.35);box-shadow:none}
     .btn-muted{background:rgba(255,255,255,.06);color:var(--text);box-shadow:none}
-    .btn-danger{background:var(--danger);color:#120c0c;box-shadow:none}
+    .btn-danger{background:var(--danger);color:#fff;box-shadow:none}
     .btn-row{display:flex;gap:10px;flex-wrap:wrap}
     label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
     input,select{width:100%;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.22);color:var(--text);outline:none}
     input:focus,select:focus{box-shadow:var(--focus);border-color:rgba(212,175,55,.5)}
+    select option{background:#1e1e1e;color:var(--text)}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media (max-width:640px){.grid2{grid-template-columns:1fr}}
+
     .startup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - var(--navH) - 100px);padding:22px 10px;gap:18px}
     .vinyl{width:220px;height:220px;position:relative;border-radius:50%;background:
       radial-gradient(circle at 50% 50%, rgba(212,175,55,.95) 0 8px, transparent 9px),
@@ -53,49 +67,89 @@
       background:radial-gradient(circle,#d4af37 0 10px,#161616 11px 100%);border:1px solid rgba(255,255,255,.08);box-shadow:0 0 18px rgba(212,175,55,.25)}
     .startup p{margin:0;color:var(--muted);text-align:center;max-width:520px;line-height:1.5;font-size:13px}
     .startup .cta{width:min(420px,100%);display:flex;flex-direction:column;gap:10px}
+
+    /* Scanner - mobilon alacsonyabb */
     .scannerWrap{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:start}
     @media (max-width:860px){.scannerWrap{grid-template-columns:1fr}}
-    .reader{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);background:#0b0b0b;min-height:360px}
-    #qr-reader{width:100%;height:100%;min-height:360px;position:relative}
-    #qr-reader video,#qr-reader canvas{width:100%!important;height:100%!important;object-fit:cover;display:block!important}
+    .reader{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);background:#0b0b0b;min-height:240px}
+    #qr-reader{width:100%;height:100%;min-height:240px;position:relative}
+    @media (max-width:600px){.reader{min-height:200px} #qr-reader{min-height:200px}}
+    #qr-reader video{width:100%!important;height:100%!important;object-fit:cover;display:block!important}
     .viewfinder{pointer-events:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
     .vf-dim{position:absolute;inset:0;background:rgba(0,0,0,.22);
-      mask:radial-gradient(circle at 50% 50%, transparent 0 190px, black 200px);
-      -webkit-mask:radial-gradient(circle at 50% 50%, transparent 0 190px, black 200px)}
-    .vf-box{width:min(72%,320px);aspect-ratio:1/1;border-radius:18px;border:2px solid rgba(212,175,55,.75);
+      mask:radial-gradient(circle at 50% 50%, transparent 0 110px, black 120px);
+      -webkit-mask:radial-gradient(circle at 50% 50%, transparent 0 110px, black 120px)}
+    .vf-box{width:min(72%,220px);aspect-ratio:1/1;border-radius:18px;border:2px solid rgba(212,175,55,.75);
       box-shadow:0 0 22px rgba(212,175,55,.12);position:relative}
     .vf-box:before{content:"";position:absolute;left:10px;right:10px;top:50%;height:1px;background:rgba(212,175,55,.35)}
+
     .badge{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text);font-size:12px;font-weight:700}
-    .badge.gold{border-color:rgba(212,175,55,.35)} .badge.ok{border-color:rgba(57,217,138,.35)} .badge.warn{border-color:rgba(255,91,91,.35)}
+    .badge.gold{border-color:rgba(212,175,55,.35)} .badge.ok{border-color:rgba(57,217,138,.35);color:var(--ok)} .badge.warn{border-color:rgba(255,91,91,.35);color:var(--danger)}
     .status .line{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
     .preview{display:flex;gap:12px;align-items:flex-start}
     .cover{width:92px;height:92px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);overflow:hidden;flex:0 0 auto}
     .cover img{width:100%;height:100%;object-fit:cover;display:block}
     .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
     .meta p{margin:0;color:var(--muted);font-size:12px;line-height:1.4}
+
+    /* Gyűjtemény */
     .collectionGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     @media (max-width:900px){.collectionGrid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:560px){.collectionGrid{grid-template-columns:1fr}}
-    .item{padding:12px;display:flex;gap:12px;align-items:center}
-    .thumb{width:64px;height:64px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);overflow:hidden;flex:0 0 auto}
+    .item{padding:12px;display:flex;gap:10px;align-items:center;cursor:pointer;transition:background .15s;position:relative}
+    .item:hover{background:rgba(212,175,55,.05)}
+    .item-check{width:18px;height:18px;flex:0 0 auto;accent-color:var(--gold);cursor:pointer}
+    .thumb{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);overflow:hidden;flex:0 0 auto}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .item .t{min-width:0;flex:1 1 auto}
     .item .t .a{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
     .item .t .b{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* Részletek modal */
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal-box{background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);width:100%;max-width:560px;max-height:88vh;overflow-y:auto;position:relative;padding:24px 20px 20px}
+    .modal-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.1);border:none;color:var(--text);border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none;padding:0;line-height:1}
+    .modal-header{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;padding-right:40px}
+    .modal-cover{width:110px;height:110px;border-radius:14px;object-fit:cover;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);flex:0 0 auto}
+    .modal-info{flex:1;min-width:0}
+    .modal-info .m-artist{font-size:13px;color:var(--muted);margin-bottom:4px}
+    .modal-info .m-title{font-size:18px;font-weight:800;line-height:1.2;margin:0}
+    .detail-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+    .detail-row:last-child{border-bottom:none}
+    .detail-label{color:var(--muted);flex-shrink:0}
+    .detail-val{font-weight:600;text-align:right;word-break:break-word}
+    .tracklist-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 0 4px}
+    .track-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+    .track-pos{color:var(--gold);min-width:28px;font-weight:700}
+    .track-name{flex:1;color:var(--text)}
+    .track-dur{color:var(--muted)}
+
     nav.bottom{position:fixed;left:0;right:0;bottom:0;height:calc(var(--navH) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
       background:rgba(18,18,18,.92);border-top:1px solid rgba(255,255,255,.06);backdrop-filter:blur(10px);display:flex;justify-content:center;z-index:50}
     .navInner{width:100%;max-width:var(--maxW);height:var(--navH);display:flex;align-items:center;justify-content:space-around;padding:10px 14px;gap:10px}
-    .navBtn{flex:1;background:transparent;color:var(--muted);border:1px solid transparent;box-shadow:none;padding:10px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800}
+    .navBtn{flex:1;background:transparent;color:var(--muted);border:1px solid transparent;box-shadow:none;padding:10px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:14px}
     .navBtn.active{color:var(--text);border-color:rgba(212,175,55,.35);background:rgba(212,175,55,.08)}
     .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--navH) + 18px + env(safe-area-inset-bottom));
-      background:rgba(30,30,30,.96);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:10px 12px;border-radius:999px;box-shadow:var(--shadow);
-      font-size:12px;display:none;z-index:120;max-width:min(560px,92vw);text-align:center}
+      background:rgba(30,30,30,.96);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:10px 16px;border-radius:999px;box-shadow:var(--shadow);
+      font-size:12px;display:none;z-index:300;max-width:min(560px,92vw);text-align:center}
     .toast.show{display:block}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
   </style>
 </head>
 
 <body>
+
+  <!-- Fekvő mód overlay -->
+  <div id="landscapeOverlay">
+    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="18" width="38" height="26" rx="4" stroke="#d4af37" stroke-width="2.5"/>
+      <circle cx="25" cy="31" r="5" stroke="#d4af37" stroke-width="2.5"/>
+      <path d="M52 24 L64 36 L52 48" stroke="#d4af37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="20" y="10" width="26" height="42" rx="4" stroke="rgba(212,175,55,0.25)" stroke-width="2" stroke-dasharray="4 3"/>
+    </svg>
+    <p>Kérjük, fordítsd a telefont <strong style="color:var(--gold)">álló helyzetbe</strong> az alkalmazás használatához.</p>
+  </div>
+
   <div class="app">
     <div class="container">
       <header>
@@ -104,17 +158,18 @@
       </header>
 
       <main>
+        <!-- Főoldal -->
         <section id="view-home">
           <div class="card section startup">
             <div class="vinyl" aria-hidden="true"></div>
             <p>Katalógusépítés elegánsan: <strong>vonalkód</strong> elsőbbséggel, és ha kell <strong>OCR</strong> katalógusszámra. Mentés előtt mindig kapsz <strong>előnézetet</strong>.</p>
             <div class="cta">
               <button id="btnStartScan">Új lemez beolvasása</button>
-              <button class="btn-ghost" id="btnGoCollection">Gyűjteményem megnyitása</button>
             </div>
           </div>
         </section>
 
+        <!-- Beolvasás -->
         <section id="view-scan" class="hidden">
           <div class="card section">
             <h2>Beolvasás</h2>
@@ -151,13 +206,16 @@
                   <div class="divider"></div>
                   <div class="grid2">
                     <div>
-                      <label>Állapot (grading)</label>
+                      <label>Állapot</label>
                       <select id="gradeSelect">
-                        <option value="M">M</option>
-                        <option value="NM" selected>NM</option>
-                        <option value="VG+">VG+</option>
-                        <option value="VG">VG</option>
-                        <option value="G">G</option>
+                        <option value="M">Mint (M)</option>
+                        <option value="NM" selected>Majdnem mint (NM)</option>
+                        <option value="VG+">Nagyon jó+ (VG+)</option>
+                        <option value="VG">Nagyon jó (VG)</option>
+                        <option value="G+">Jó+ (G+)</option>
+                        <option value="G">Jó (G)</option>
+                        <option value="F">Megfelelő (F)</option>
+                        <option value="P">Gyenge (P)</option>
                       </select>
                     </div>
                     <div>
@@ -175,57 +233,61 @@
           </div>
         </section>
 
+        <!-- Gyűjtemény -->
         <section id="view-collection" class="hidden">
           <div class="card section">
             <h2>Gyűjteményem</h2>
-            <div class="btn-row" style="margin-bottom:12px">
-              <button class="btn-ghost" id="btnExportCsv">Exportálás CSV-be</button>
+            <div class="btn-row" style="margin-bottom:12px;flex-wrap:wrap">
+              <button id="btnExportPdf">PDF export</button>
+              <button class="btn-ghost" id="btnExportCsv">CSV export</button>
+              <button class="btn-danger" id="btnDeleteSelected">Kijelölt törlése</button>
               <button class="btn-muted" id="btnClearAll">Összes törlése</button>
             </div>
             <div id="collectionEmpty" class="card section" style="margin-top:0;background:rgba(255,255,255,.03);box-shadow:none;">
               <h2>Nincs még lemez</h2>
-              <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">A gyűjteményed üres. Lépj a Kezdőlapra, és válaszd az <strong>„Új lemez beolvasása”</strong> gombot.</p>
+              <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">A gyűjteményed üres. Lépj a Kezdőlapra, és válaszd az <strong>„Új lemez beolvasása"</strong> gombot.</p>
             </div>
             <div id="collectionGrid" class="collectionGrid hidden"></div>
           </div>
         </section>
 
-        <section id="view-settings" class="hidden">
-          <div class="card section">
-            <h2>Beállítások</h2>
-            <div class="card section" style="margin-top:0;background:rgba(255,255,255,.03);box-shadow:none;">
-              <h2>Discogs token</h2>
-              <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">
-                A token <strong>nem</strong> az index.html-ben van. Vercel-ben állítsd be környezeti változóként:
-                <span class="mono">DISCOGS_TOKEN</span>. A kliens a <span class="mono">/api/discogs</span> proxyt hívja.
-              </p>
-            </div>
-          </div>
-        </section>
       </main>
+    </div>
+  </div>
+
+  <!-- Részletek modal -->
+  <div id="detailModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="btnModalClose" aria-label="Bezárás">✕</button>
+      <div class="modal-header">
+        <img id="modalCover" class="modal-cover" src="" alt="Borító" style="display:none">
+        <div class="modal-info">
+          <div class="m-artist" id="modalArtist"></div>
+          <div class="m-title" id="modalTitle"></div>
+        </div>
+      </div>
+      <div id="modalDetails"></div>
     </div>
   </div>
 
   <nav class="bottom">
     <div class="navInner">
-      <button class="navBtn active" id="navHome">Kezdőlap</button>
-      <button class="navBtn" id="navCollection">Gyűjteményem</button>
-      <button class="navBtn" id="navSettings">Beállítások</button>
+      <button class="navBtn active" id="navHome">🏠 Kezdőlap</button>
+      <button class="navBtn" id="navCollection">🎵 Gyűjteményem</button>
     </div>
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- html5-qrcode eltávolítva: natív getUserMedia + BarcodeDetector váltotta fel -->
   <script src="https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 
   <script>
     async function waitForLibs(){
-      const start = Date.now();
+      const start=Date.now();
       while(true){
-        if (window.Tesseract) return true;
-        if (Date.now() - start > 8000) throw new Error("LIB_LOAD_TIMEOUT");
-        await new Promise(r=>setTimeout(r,50));
+        if(window.Tesseract) return true;
+        if(Date.now()-start>10000) throw new Error("LIB_LOAD_TIMEOUT");
+        await new Promise(r=>setTimeout(r,100));
       }
     }
 
@@ -233,14 +295,26 @@
     const CATNO_REGEX=/\b(?:SLPX|LPX|SLPM)\s*[-]?\s*\d{2,6}\b/gi;
     const DISCOGS_PROXY="/api/discogs";
 
-    const state={ view:"home", scanner:{running:false,stream:null,ocrTimer:null,barcodeFound:false,animFrame:null,startWatchdog:null}, preview:null };
+    const GRADE_HU={
+      "M":"Mint (M)","NM":"Majdnem mint (NM)","VG+":"Nagyon jó+ (VG+)",
+      "VG":"Nagyon jó (VG)","G+":"Jó+ (G+)","G":"Jó (G)","F":"Megfelelő (F)","P":"Gyenge (P)"
+    };
 
-    const $=(s)=>document.querySelector(s);
-    const views={ home:$("#view-home"), scan:$("#view-scan"), collection:$("#view-collection"), settings:$("#view-settings") };
-    const nav={ home:$("#navHome"), collection:$("#navCollection"), settings:$("#navSettings") };
+    const state={
+      view:"home",
+      scanner:{running:false,stream:null,ocrTimer:null,barcodeFound:false,animFrame:null},
+      preview:null
+    };
 
-    function setPill(t){ $("#pillStateText").textContent=t; }
-    function toast(msg,ms=2200){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._tm); toast._tm=setTimeout(()=>t.classList.remove("show"),ms); }
+    const $=s=>document.querySelector(s);
+    const views={home:$("#view-home"),scan:$("#view-scan"),collection:$("#view-collection")};
+    const nav={home:$("#navHome"),collection:$("#navCollection")};
+
+    function setPill(t){$("#pillStateText").textContent=t;}
+    function toast(msg,ms=2400){
+      const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+      clearTimeout(toast._tm); toast._tm=setTimeout(()=>t.classList.remove("show"),ms);
+    }
 
     function setView(name){
       state.view=name;
@@ -250,40 +324,61 @@
       if(name==="collection") renderCollection();
     }
 
-    function loadRecords(){ try{ const r=localStorage.getItem(LS_KEY); const a=r?JSON.parse(r):[]; return Array.isArray(a)?a:[] }catch{return []} }
-    function saveRecords(a){ localStorage.setItem(LS_KEY,JSON.stringify(a)); }
-    function addRecord(rec){ const a=loadRecords(); a.unshift(rec); saveRecords(a); }
-
-    function escapeAttr(s){ return String(s).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
-    function escapeText(s){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
-    function csvEscape(v){ const s=(v??"").toString().replaceAll("\r"," ").replaceAll("\n"," "); return (/[",]/.test(s))?`"${s.replaceAll('"','""')}"`:s; }
-
-    function summarizeRec(rec){
-      const parts=[]; if(rec.year) parts.push(rec.year); if(rec.label) parts.push(rec.label);
-      if(rec.catno) parts.push("Cat#: "+rec.catno); if(rec.grade) parts.push("Állapot: "+rec.grade);
-      return parts.join(" • ") || "—";
+    function loadRecords(){
+      try{const r=localStorage.getItem(LS_KEY);const a=r?JSON.parse(r):[];return Array.isArray(a)?a:[];}catch{return[];}
+    }
+    function saveRecords(a){localStorage.setItem(LS_KEY,JSON.stringify(a));}
+    function addRecord(rec){
+      const a=loadRecords();
+      a.push(rec);
+      a.sort((x,y)=>(x.artist||"").localeCompare(y.artist||"","hu")||(x.title||"").localeCompare(y.title||"","hu"));
+      saveRecords(a);
     }
 
+    function escapeAttr(s){return String(s).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");}
+    function escapeText(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");}
+    function csvEscape(v){const s=(v??"").toString().replaceAll("\r"," ").replaceAll("\n"," ");return(/[",]/.test(s))?`"${s.replaceAll('"','""')}"`:`${s}`;}
+
+    function summarizeRec(rec){
+      const parts=[];
+      if(rec.year) parts.push(rec.year);
+      if(rec.label) parts.push(rec.label);
+      if(rec.catno) parts.push("Cat#: "+rec.catno);
+      if(rec.grade) parts.push(GRADE_HU[rec.grade]||rec.grade);
+      return parts.join(" • ")||"—";
+    }
+
+    // ── DISCOGS ───────────────────────────────────────────────────────────────
     async function proxyFetch(endpoint){
       const url=new URL(DISCOGS_PROXY,location.origin);
       url.searchParams.set("endpoint",endpoint);
       const res=await fetch(url.toString());
-      if(!res.ok) throw new Error("Proxy/Discogs hiba ("+res.status+"): "+(await res.text().catch(()=> "")));
+      if(!res.ok) throw new Error("Proxy/Discogs hiba ("+res.status+")");
       return res.json();
     }
-    const discogsSearchByBarcode=(barcode)=>proxyFetch("database/search?"+new URLSearchParams({barcode,type:"release",per_page:"5"}));
-    const discogsSearchByCatno=(catno)=>proxyFetch("database/search?"+new URLSearchParams({catno,type:"release",per_page:"5"}));
-    const discogsGetRelease=(id)=>proxyFetch("releases/"+encodeURIComponent(id));
+    const discogsSearchByBarcode=b=>proxyFetch("database/search?"+new URLSearchParams({barcode:b,type:"release",per_page:"5"}));
+    const discogsSearchByCatno=c=>proxyFetch("database/search?"+new URLSearchParams({catno:c,type:"release",per_page:"5"}));
+    const discogsGetRelease=id=>proxyFetch("releases/"+encodeURIComponent(id));
 
     function normalizeRelease(release,fallbackCatno=""){
-      const artist=(release.artists||[]).map(a=>a?.name).filter(Boolean).join(", ").replace(/\s+\(\d+\)$/,"") || "";
+      const artist=(release.artists||[]).map(a=>a?.name).filter(Boolean).join(", ").replace(/\s+\(\d+\)$/,"")||"";
       const title=release.title||"Ismeretlen cím";
       const year=release.year?String(release.year):"";
       const label=(release.labels||[]).map(l=>l?.name).filter(Boolean).slice(0,2).join(", ");
       const catno=(release.labels||[]).map(l=>l?.catno).filter(Boolean).find(Boolean)||fallbackCatno||"";
       const cover=release.images?.find(i=>i.type==="primary")?.uri||release.images?.[0]?.uri||release.thumb||"";
-      return { id:crypto.randomUUID(), discogsReleaseId:release.id||null, artist,title,year,label,catno,grade:"NM",coverUrl:cover,
-        createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+      const country=release.country||"";
+      const genres=(release.genres||[]).join(", ");
+      const styles=(release.styles||[]).join(", ");
+      const formats=(release.formats||[]).map(f=>[f.name,...(f.descriptions||[])].join(" ")).filter(Boolean).join(", ");
+      const notes=release.notes||"";
+      const tracklist=release.tracklist||[];
+      return{
+        id:crypto.randomUUID(),discogsReleaseId:release.id||null,
+        artist,title,year,label,catno,grade:"NM",coverUrl:cover,
+        country,genres,styles,formats,notes,tracklist,
+        createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+      };
     }
 
     async function fetchAndPreview({barcode=null,catno=null}){
@@ -291,13 +386,12 @@
         setPill("Discogs…");
         const search=barcode?await discogsSearchByBarcode(barcode):await discogsSearchByCatno(catno);
         const best=search?.results?.[0];
-        if(!best){ toast("Nincs Discogs találat."); setPill("Készen"); return; }
+        if(!best){toast("Nincs Discogs találat.");setPill("Készen");return;}
         const release=await discogsGetRelease(best.id);
         const rec=normalizeRelease(release,catno||"");
         $("#catnoInput").value=rec.catno||(catno||"");
         $("#gradeSelect").value="NM";
         state.preview=rec;
-
         $("#previewCover").innerHTML=rec.coverUrl?`<img alt="Borító" src="${escapeAttr(rec.coverUrl)}">`:"";
         $("#previewTitle").textContent=`${rec.artist} — ${rec.title}`;
         $("#previewDetails").textContent=summarizeRec(rec);
@@ -305,134 +399,115 @@
         setPill("Előnézet");
       }catch(e){
         console.error(e);
-        toast("Discogs hiba: ellenőrizd a /api/discogs proxyt és a Vercel DISCOGS_TOKEN env var-t.");
+        toast("Discogs hiba: ellenőrizd a /api/discogs proxyt és a DISCOGS_TOKEN env var-t.");
         setPill("Készen");
       }
     }
 
-// ── NATÍV KAMERA SCANNER (getUserMedia + BarcodeDetector) ──────────────────
-    // Megbízhatóbb mint html5-qrcode: nincs könyvtár bug, átlátható hibakezelés.
-
-    function getVideo(){ return document.querySelector("#qr-reader video"); }
+    // ── NATÍV KAMERA ──────────────────────────────────────────────────────────
+    function getVideo(){return document.querySelector("#qr-reader video");}
 
     async function stopScan(keepView=false){
       clearTimeout(state.scanner.ocrTimer);
-      clearTimeout(state.scanner.startWatchdog);
       cancelAnimationFrame(state.scanner.animFrame);
-      state.scanner.animFrame = null;
-      // Stream leállítása
+      state.scanner.animFrame=null;
       if(state.scanner.stream){
         state.scanner.stream.getTracks().forEach(t=>t.stop());
-        state.scanner.stream = null;
+        state.scanner.stream=null;
       }
-      // Video elem takarítás
-      const v = getVideo();
-      if(v){ v.srcObject = null; }
-      state.scanner.running = false;
+      const v=getVideo();
+      if(v){v.srcObject=null;}
+      state.scanner.running=false;
       if(!keepView && state.view==="scan") setView("home");
       setPill("Készen");
     }
 
     async function startScan(){
       if(state.scanner.running) return;
-      if(state.scanner.stream){ await stopScan(true); }
+      if(state.scanner.stream){await stopScan(true);}
 
       setView("scan");
       setPill("Kamera indítása…");
       $("#previewCard").classList.add("hidden");
-      state.preview = null;
-      $("#foundCode").textContent = "—";
-      $("#foundSource").textContent = "—";
-      $("#ocrBadge").textContent = "Készenlétben";
-      $("#ocrBadge").className = "badge";
-      state.scanner.running = true;
-      state.scanner.barcodeFound = false;
+      state.preview=null;
+      $("#foundCode").textContent="—";
+      $("#foundSource").textContent="—";
+      $("#ocrBadge").textContent="Készenlétben";
+      $("#ocrBadge").className="badge";
+      state.scanner.running=true;
+      state.scanner.barcodeFound=false;
 
-      // Video elem felépítése
-      const container = $("#qr-reader");
-      container.innerHTML = "";
-      const vid = document.createElement("video");
+      const container=$("#qr-reader");
+      container.innerHTML="";
+      const vid=document.createElement("video");
       vid.setAttribute("playsinline","");
       vid.setAttribute("webkit-playsinline","");
-      vid.muted = true;
-      vid.autoplay = true;
-      vid.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+      vid.muted=true;
+      vid.autoplay=true;
+      vid.style.cssText="width:100%;height:100%;object-fit:cover;display:block;";
       container.appendChild(vid);
 
       try{
-        // Kamera stream kérése
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal:"environment" }, width:{ideal:1280}, height:{ideal:720} },
-          audio: false
+        const stream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},
+          audio:false
         });
-        if(!state.scanner.running){ stream.getTracks().forEach(t=>t.stop()); return; }
-        state.scanner.stream = stream;
-        vid.srcObject = stream;
+        if(!state.scanner.running){stream.getTracks().forEach(t=>t.stop());return;}
+        state.scanner.stream=stream;
+        vid.srcObject=stream;
         await vid.play();
-
         setPill("Beolvasás");
 
-        // BarcodeDetector (Chrome 83+, Android Chrome, Edge)
-        const hasBarcodeDetector = "BarcodeDetector" in window;
-        let detector = null;
+        const hasBarcodeDetector="BarcodeDetector" in window;
+        let detector=null;
         if(hasBarcodeDetector){
-          detector = new BarcodeDetector({ formats: ["ean_13","ean_8","upc_a","upc_e","code_128","code_39"] });
+          detector=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128","code_39"]});
         }
 
-        // Canvas az OCR-hoz és BarcodeDetector fallback-hoz
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-        let lastBarcodeScan = 0;
-
+        let lastScan=0;
         async function scanLoop(){
-          if(!state.scanner.running || state.scanner.barcodeFound) return;
-          state.scanner.animFrame = requestAnimationFrame(scanLoop);
-
-          if(vid.readyState < 2) return; // még nem áll készen
-
-          const now = Date.now();
-
-          // BarcodeDetector: 10 fps-nek megfelelő időzítéssel
-          if(hasBarcodeDetector && now - lastBarcodeScan > 100){
-            lastBarcodeScan = now;
+          if(!state.scanner.running||state.scanner.barcodeFound) return;
+          state.scanner.animFrame=requestAnimationFrame(scanLoop);
+          if(vid.readyState<2) return;
+          const now=Date.now();
+          if(hasBarcodeDetector && now-lastScan>100){
+            lastScan=now;
             try{
-              const barcodes = await detector.detect(vid);
+              const barcodes=await detector.detect(vid);
               for(const bc of barcodes){
-                const cleaned = String(bc.rawValue||"").replace(/\s/g,"");
+                const cleaned=String(bc.rawValue||"").replace(/\s/g,"");
                 if(/^\d{13}$/.test(cleaned)){
-                  state.scanner.barcodeFound = true;
+                  state.scanner.barcodeFound=true;
                   cancelAnimationFrame(state.scanner.animFrame);
-                  $("#foundCode").textContent = cleaned;
-                  $("#foundSource").textContent = "Vonalkód";
-                  $("#ocrBadge").textContent = "Nem szükséges";
-                  $("#ocrBadge").className = "badge ok";
+                  $("#foundCode").textContent=cleaned;
+                  $("#foundSource").textContent="Vonalkód";
+                  $("#ocrBadge").textContent="Nem szükséges";
+                  $("#ocrBadge").className="badge ok";
                   toast("Vonalkód észlelve: "+cleaned);
                   await stopScan(true);
-                  await fetchAndPreview({barcode: cleaned});
+                  await fetchAndPreview({barcode:cleaned});
                   return;
                 }
               }
             }catch(_){}
           }
         }
-
         scanLoop();
         scheduleOcrFallback();
 
       }catch(e){
-        console.error("Kamera hiba:", e);
-        state.scanner.running = false;
-        state.scanner.stream = null;
-        container.innerHTML = "";
-        const msg = String(e?.name || e?.message || "").toLowerCase();
-        if(msg.includes("notallowed") || msg.includes("permission") || msg.includes("denied")){
+        console.error("Kamera hiba:",e);
+        state.scanner.running=false;
+        state.scanner.stream=null;
+        container.innerHTML="";
+        const msg=String(e?.name||e?.message||"").toLowerCase();
+        if(msg.includes("notallowed")||msg.includes("permission")||msg.includes("denied")){
           toast("Kamera hozzáférés megtagadva — engedélyezd a böngészőben!");
-        } else if(msg.includes("notfound") || msg.includes("devicenotfound")){
+        }else if(msg.includes("notfound")||msg.includes("devicenotfound")){
           toast("Nem található kamera ezen az eszközön.");
-        } else if(msg.includes("notreadable") || msg.includes("trackstarterror")){
+        }else if(msg.includes("notreadable")||msg.includes("trackstarterror")){
           toast("A kamera foglalt — zárd be a többi appot, majd próbáld újra.");
-        } else {
+        }else{
           toast("Kamera hiba: "+(e?.name||e?.message||"ismeretlen"));
         }
         setPill("Hiba");
@@ -440,133 +515,254 @@
       }
     }
 
+    // OCR fallback – gyorsabb beállításokkal, 5s késleltetés
     function scheduleOcrFallback(){
       clearTimeout(state.scanner.ocrTimer);
-      state.scanner.ocrTimer=setTimeout(async ()=>{
-        if(!state.scanner.running || state.scanner.barcodeFound) return;
-        $("#ocrBadge").textContent="OCR fut…"; $("#ocrBadge").className="badge gold";
+      state.scanner.ocrTimer=setTimeout(async()=>{
+        if(!state.scanner.running||state.scanner.barcodeFound) return;
+        $("#ocrBadge").textContent="OCR fut…";
+        $("#ocrBadge").className="badge gold";
         setPill("OCR…");
         try{
           const catno=await runOcrForCatno();
           if(!catno){
-            $("#ocrBadge").textContent="Nincs találat"; $("#ocrBadge").className="badge warn";
-            setPill("Beolvasás"); scheduleOcrFallback(); return;
+            $("#ocrBadge").textContent="Nincs találat";
+            $("#ocrBadge").className="badge warn";
+            setPill("Beolvasás");
+            scheduleOcrFallback();
+            return;
           }
-          $("#foundCode").textContent=catno; $("#foundSource").textContent="OCR";
-          $("#ocrBadge").textContent="Találat"; $("#ocrBadge").className="badge ok";
+          $("#foundCode").textContent=catno;
+          $("#foundSource").textContent="OCR";
+          $("#ocrBadge").textContent="Találat";
+          $("#ocrBadge").className="badge ok";
           toast("Katalógusszám észlelve: "+catno);
           await stopScan(true);
           await fetchAndPreview({catno});
         }catch(e){
           console.error(e);
-          $("#ocrBadge").textContent="OCR hiba"; $("#ocrBadge").className="badge warn";
+          $("#ocrBadge").textContent="OCR hiba";
+          $("#ocrBadge").className="badge warn";
           setPill("Beolvasás");
+          scheduleOcrFallback();
         }
-      },2600);
+      },5000);
     }
 
     async function runOcrForCatno(){
       const v=getVideo();
-      if(!v || v.readyState<2) return null;
-      const vw=v.videoWidth, vh=v.videoHeight;
-      if(!vw || !vh) return null;
-      const crop=Math.floor(Math.min(vw,vh)*0.62);
-      const sx=Math.floor((vw-crop)/2), sy=Math.floor((vh-crop)/2);
-      const c=document.createElement("canvas"); c.width=crop; c.height=crop;
+      if(!v||v.readyState<2) return null;
+      const vw=v.videoWidth,vh=v.videoHeight;
+      if(!vw||!vh) return null;
+      // Kisebb crop + scale le = sokkal gyorsabb
+      const crop=Math.floor(Math.min(vw,vh)*0.5);
+      const sx=Math.floor((vw-crop)/2),sy=Math.floor((vh-crop)/2);
+      const scale=0.5;
+      const c=document.createElement("canvas");
+      c.width=Math.floor(crop*scale);
+      c.height=Math.floor(crop*scale);
       const ctx=c.getContext("2d",{willReadFrequently:true});
-      ctx.drawImage(v,sx,sy,crop,crop,0,0,crop,crop);
-      const r=await Tesseract.recognize(c.toDataURL("image/png"),"eng",{logger:()=>{}});
+      ctx.drawImage(v,sx,sy,crop,crop,0,0,c.width,c.height);
+      const r=await Tesseract.recognize(c,"eng",{
+        logger:()=>{},
+        tessedit_pageseg_mode:"7",
+        tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
+      });
       const text=(r?.data?.text||"").toUpperCase();
       const m=text.match(CATNO_REGEX);
       return m?.[0]?.replace(/\s+/g," ").trim()||null;
     }
 
-    // stopScan már fentebb definiálva a startScan blokk előtt
-
+    // ── GYŰJTEMÉNY MEGJELENÍTÉS ───────────────────────────────────────────────
     function renderCollection(){
       const all=loadRecords();
       const empty=$("#collectionEmpty");
       const grid=$("#collectionGrid");
-      if(!all.length){ empty.classList.remove("hidden"); grid.classList.add("hidden"); grid.innerHTML=""; return; }
-      empty.classList.add("hidden"); grid.classList.remove("hidden");
-      grid.innerHTML=all.map(rec=>`
-        <div class="card item">
+      if(!all.length){
+        empty.classList.remove("hidden");
+        grid.classList.add("hidden");
+        grid.innerHTML="";
+        return;
+      }
+      empty.classList.add("hidden");
+      grid.classList.remove("hidden");
+      grid.innerHTML=all.map((rec,i)=>`
+        <div class="card item" data-idx="${i}">
+          <input type="checkbox" class="item-check" data-idx="${i}" onclick="event.stopPropagation()" aria-label="Kijelölés">
           <div class="thumb">${rec.coverUrl?`<img alt="Borító" src="${escapeAttr(rec.coverUrl)}">`:""}</div>
           <div class="t">
             <div class="a">${escapeText(rec.artist||"—")}</div>
             <div class="b">${escapeText(rec.title||"—")}</div>
-            <div class="a" style="margin-top:6px">${escapeText(summarizeRec(rec))}</div>
+            <div class="a" style="margin-top:4px">${escapeText(summarizeRec(rec))}</div>
           </div>
         </div>`).join("");
+
+      grid.querySelectorAll(".item").forEach(el=>{
+        el.addEventListener("click",e=>{
+          if(e.target.classList.contains("item-check")) return;
+          openDetailModal(loadRecords()[parseInt(el.dataset.idx)]);
+        });
+      });
     }
 
+    // ── RÉSZLETEK MODAL ───────────────────────────────────────────────────────
+    function openDetailModal(rec){
+      const cover=$("#modalCover");
+      if(rec.coverUrl){cover.src=rec.coverUrl;cover.style.display="block";}
+      else{cover.style.display="none";}
+      $("#modalArtist").textContent=rec.artist||"";
+      $("#modalTitle").textContent=rec.title||"—";
+
+      const fields=[
+        ["Év",rec.year],
+        ["Kiadó",rec.label],
+        ["Katalógusszám",rec.catno],
+        ["Állapot",GRADE_HU[rec.grade]||rec.grade],
+        ["Formátum",rec.formats],
+        ["Ország",rec.country],
+        ["Műfaj",rec.genres],
+        ["Stílus",rec.styles],
+        ["Discogs ID",rec.discogsReleaseId?String(rec.discogsReleaseId):""],
+        ["Hozzáadva",rec.createdAt?new Date(rec.createdAt).toLocaleDateString("hu-HU"):""],
+      ].filter(([,v])=>v);
+
+      let html=fields.map(([l,v])=>
+        `<div class="detail-row"><span class="detail-label">${escapeText(l)}</span><span class="detail-val">${escapeText(String(v))}</span></div>`
+      ).join("");
+
+      if(rec.tracklist&&rec.tracklist.length){
+        html+=`<div class="tracklist-title">Számlista</div>`;
+        html+=rec.tracklist.map(t=>
+          `<div class="track-row"><span class="track-pos">${escapeText(t.position||"")}</span><span class="track-name">${escapeText(t.title||"")}</span><span class="track-dur">${escapeText(t.duration||"")}</span></div>`
+        ).join("");
+      }
+
+      $("#modalDetails").innerHTML=html;
+      $("#detailModal").classList.remove("hidden");
+    }
+
+    function closeDetailModal(){
+      $("#detailModal").classList.add("hidden");
+    }
+
+    // ── CSV / PDF EXPORT ──────────────────────────────────────────────────────
     function toCsv(records){
-      const headers=["Előadó","Cím","Év","Kiadó","Katalógusszám","Állapot","DiscogsReleaseId","BorítóURL","Létrehozva","Módosítva"];
-      const rows=records.map(r=>[r.artist,r.title,r.year,r.label,r.catno,r.grade,r.discogsReleaseId,r.coverUrl,r.createdAt,r.updatedAt].map(csvEscape).join(","));
-      return headers.join(",")+"\n"+rows.join("\n");
+      const h=["Előadó","Cím","Év","Kiadó","Katalógusszám","Állapot","Ország","Műfaj","DiscogsReleaseId","BorítóURL","Létrehozva"];
+      const rows=records.map(r=>[r.artist,r.title,r.year,r.label,r.catno,GRADE_HU[r.grade]||r.grade,r.country,r.genres,r.discogsReleaseId,r.coverUrl,r.createdAt].map(csvEscape).join(","));
+      return h.join(",")+"\n"+rows.join("\n");
     }
 
     async function exportCsv(){
       const records=loadRecords();
-      if(!records.length){ toast("Nincs mit exportálni."); return; }
+      if(!records.length){toast("Nincs mit exportálni.");return;}
       const csv=toCsv(records);
       const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
       const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.csv`;
       try{
-        if(navigator.canShare && navigator.canShare({files:[new File([blob],name,{type:blob.type})]})){
-          await navigator.share({title:"LP Gyűjtemény (CSV)",text:"LP gyűjtemény export CSV formátumban.",files:[new File([blob],name,{type:blob.type})]});
-          toast("Megosztás elindítva."); return;
+        if(navigator.canShare&&navigator.canShare({files:[new File([blob],name,{type:blob.type})]})){
+          await navigator.share({title:"LP Gyűjtemény (CSV)",files:[new File([blob],name,{type:blob.type})]});
+          toast("Megosztás elindítva.");return;
         }
       }catch{}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+      const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
       URL.revokeObjectURL(url);
       toast("CSV letöltve.");
     }
 
-    function bindUI(){
-      $("#btnStartScan").addEventListener("click", startScan);
-      $("#btnGoCollection").addEventListener("click", ()=>setView("collection"));
-      $("#btnStopScan").addEventListener("click", ()=>stopScan(false));
-      $("#btnRetry").addEventListener("click", ()=>{ stopScan(true).finally(()=>startScan()); });
+    function exportPdf(){
+      const records=loadRecords();
+      if(!records.length){toast("Nincs mit exportálni.");return;}
+      const rows=records.map(r=>`
+        <tr>
+          <td>${escapeText(r.artist||"—")}</td>
+          <td>${escapeText(r.title||"—")}</td>
+          <td>${escapeText(r.year||"")}</td>
+          <td>${escapeText(r.label||"")}</td>
+          <td>${escapeText(r.catno||"")}</td>
+          <td>${escapeText(GRADE_HU[r.grade]||r.grade||"")}</td>
+        </tr>`).join("");
+      const html=`<!doctype html><html><head><meta charset="utf-8"><title>LP Katalógus</title>
+        <style>
+          body{font-family:Arial,sans-serif;font-size:11px;color:#222;padding:24px;margin:0}
+          h1{font-size:20px;margin:0 0 4px;color:#111}
+          .sub{color:#888;font-size:10px;margin:0 0 18px}
+          table{width:100%;border-collapse:collapse}
+          th{background:#d4af37;color:#111;padding:7px 9px;text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+          td{padding:6px 9px;border-bottom:1px solid #eee;vertical-align:top}
+          tr:nth-child(even) td{background:#fafafa}
+          @media print{body{padding:0}}
+        </style></head><body>
+        <h1>LP Katalógus</h1>
+        <p class="sub">Exportálva: ${new Date().toLocaleDateString("hu-HU")} — összesen ${records.length} lemez</p>
+        <table>
+          <thead><tr><th>Előadó</th><th>Cím</th><th>Év</th><th>Kiadó</th><th>Kat.sz.</th><th>Állapot</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></body></html>`;
+      const w=window.open("","_blank");
+      if(!w){toast("Engedélyezd a felugró ablakokat a PDF exporthoz.");return;}
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(()=>{w.print();},600);
+    }
 
-      $("#btnApproveSave").addEventListener("click", ()=>{
+    // ── UI KÖTÉSEK ────────────────────────────────────────────────────────────
+    function bindUI(){
+      $("#btnStartScan").addEventListener("click",startScan);
+      $("#btnStopScan").addEventListener("click",()=>stopScan(false));
+      $("#btnRetry").addEventListener("click",()=>{stopScan(true).finally(()=>startScan());});
+
+      $("#btnApproveSave").addEventListener("click",()=>{
         if(!state.preview) return;
         const grade=$("#gradeSelect").value;
         const catno=($("#catnoInput").value||"").trim();
-        addRecord({ ...state.preview, grade, catno });
+        addRecord({...state.preview,grade,catno,updatedAt:new Date().toISOString()});
         toast("Mentve a gyűjteménybe.");
         state.preview=null;
         $("#previewCard").classList.add("hidden");
         setView("collection");
       });
-      $("#btnReject").addEventListener("click", ()=>{
+      $("#btnReject").addEventListener("click",()=>{
         state.preview=null;
         $("#previewCard").classList.add("hidden");
         toast("Előnézet elutasítva.");
       });
 
-      $("#btnExportCsv").addEventListener("click", exportCsv);
-      $("#btnClearAll").addEventListener("click", ()=>{
-        if(!confirm("Biztosan törlöd az összes mentett lemezt?")) return;
-        saveRecords([]); toast("Gyűjtemény törölve."); renderCollection();
+      $("#btnExportCsv").addEventListener("click",exportCsv);
+      $("#btnExportPdf").addEventListener("click",exportPdf);
+
+      $("#btnDeleteSelected").addEventListener("click",()=>{
+        const checked=[...document.querySelectorAll(".item-check:checked")].map(el=>parseInt(el.dataset.idx));
+        if(!checked.length){toast("Nincs kijelölt lemez.");return;}
+        if(!confirm(`Biztosan törlöd a ${checked.length} kijelölt lemezt?`)) return;
+        const all=loadRecords();
+        saveRecords(all.filter((_,i)=>!checked.includes(i)));
+        toast(`${checked.length} lemez törölve.`);
+        renderCollection();
       });
 
-      nav.home.addEventListener("click", ()=>setView("home"));
-      nav.collection.addEventListener("click", ()=>setView("collection"));
-      nav.settings.addEventListener("click", ()=>setView("settings"));
+      $("#btnClearAll").addEventListener("click",()=>{
+        if(!confirm("Biztosan törlöd az összes mentett lemezt?")) return;
+        saveRecords([]);toast("Gyűjtemény törölve.");renderCollection();
+      });
 
-      document.addEventListener("visibilitychange", ()=>{ if(document.hidden) stopScan(true); });
+      nav.home.addEventListener("click",()=>setView("home"));
+      nav.collection.addEventListener("click",()=>setView("collection"));
+
+      $("#btnModalClose").addEventListener("click",closeDetailModal);
+      $("#detailModal").addEventListener("click",e=>{if(e.target===$("#detailModal")) closeDetailModal();});
+
+      document.addEventListener("visibilitychange",()=>{if(document.hidden) stopScan(true);});
     }
 
-    window.addEventListener("load", async ()=>{
-      try{ await waitForLibs(); }
-      catch(e){ console.error(e); toast("Nem töltődtek be a könyvtárak (tesseract). Frissíts és próbáld újra."); }
+    window.addEventListener("load",async()=>{
+      try{await waitForLibs();}
+      catch(e){console.error(e);toast("Tesseract nem töltődött be. Frissíts és próbáld újra.");}
       bindUI();
       renderCollection();
-      if("serviceWorker" in navigator){ try{ await navigator.serviceWorker.register("./sw.js"); }catch{} }
+      if("serviceWorker" in navigator){try{await navigator.serviceWorker.register("./sw.js");}catch{}}
     });
   </script>
 </body>
 </html>
-
