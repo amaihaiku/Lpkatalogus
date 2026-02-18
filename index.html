@@ -227,24 +227,9 @@
                     </div>
                   </div>
                   <div class="divider"></div>
-                  <div class="grid2">
-                    <div>
-                      <label>Állapot</label>
-                      <select id="gradeSelect">
-                        <option value="M">Mint (M)</option>
-                        <option value="NM" selected>Majdnem mint (NM)</option>
-                        <option value="VG+">Nagyon jó+ (VG+)</option>
-                        <option value="VG">Nagyon jó (VG)</option>
-                        <option value="G+">Jó+ (G+)</option>
-                        <option value="G">Jó (G)</option>
-                        <option value="F">Megfelelő (F)</option>
-                        <option value="P">Gyenge (P)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label>Katalógusszám (felülírható)</label>
-                      <input id="catnoInput" placeholder="pl. SLPX 1234" />
-                    </div>
+                  <div>
+                    <label>Katalógusszám (felülírható)</label>
+                    <input id="catnoInput" placeholder="pl. SLPX 1234" />
                   </div>
                   <div class="btn-row" style="margin-top:12px">
                     <button id="btnApproveSave">Mentés a gyűjteménybe</button>
@@ -334,10 +319,7 @@
     const CATNO_REGEX=/\b(?:SLPX|LPX|SLPM)\s*[-]?\s*\d{2,6}\b/gi;
     const DISCOGS_PROXY="/api/discogs";
 
-    const GRADE_HU={
-      "M":"Mint (M)","NM":"Majdnem mint (NM)","VG+":"Nagyon jó+ (VG+)",
-      "VG":"Nagyon jó (VG)","G+":"Jó+ (G+)","G":"Jó (G)","F":"Megfelelő (F)","P":"Gyenge (P)"
-    };
+
 
     const state={
       view:"home",
@@ -383,7 +365,7 @@
       if(rec.year) parts.push(rec.year);
       if(rec.label) parts.push(rec.label);
       if(rec.catno) parts.push("Cat#: "+rec.catno);
-      if(rec.grade) parts.push(GRADE_HU[rec.grade]||rec.grade);
+
       return parts.join(" • ")||"—";
     }
 
@@ -414,7 +396,7 @@
       const tracklist=release.tracklist||[];
       return{
         id:crypto.randomUUID(),discogsReleaseId:release.id||null,
-        artist,title,year,label,catno,grade:"NM",coverUrl:cover,
+        artist,title,year,label,catno,coverUrl:cover,
         country,genres,styles,formats,notes,tracklist,
         createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
       };
@@ -429,7 +411,6 @@
         const release=await discogsGetRelease(best.id);
         const rec=normalizeRelease(release,catno||"");
         $("#catnoInput").value=rec.catno||(catno||"");
-        $("#gradeSelect").value="NM";
         state.preview=rec;
         $("#previewCover").innerHTML=rec.coverUrl?`<img alt="Borító" src="${escapeAttr(rec.coverUrl)}">`:"";
         $("#previewTitle").textContent=`${rec.artist} — ${rec.title}`;
@@ -655,7 +636,7 @@
         ["Év",rec.year],
         ["Kiadó",rec.label],
         ["Katalógusszám",rec.catno],
-        ["Állapot",GRADE_HU[rec.grade]||rec.grade],
+
         ["Formátum",rec.formats],
         ["Ország",rec.country],
         ["Műfaj",rec.genres],
@@ -715,75 +696,103 @@
           document.head.appendChild(s);
         });
       }
-      const headers=["Előadó","Cím","Év","Kiadó","Katalógusszám","Állapot","Ország","Műfaj","Stílus","Formátum","Discogs ID","Borító URL","Hozzáadva"];
+      const headers=["Előadó","Cím","Év","Kiadó","Katalógusszám","Ország","Műfaj","Stílus","Formátum","Discogs ID","Borító URL","Hozzáadva"];
       const rows=records.map(r=>[
         r.artist||"",r.title||"",r.year||"",r.label||"",r.catno||"",
-        GRADE_HU[r.grade]||r.grade||"",r.country||"",r.genres||"",r.styles||"",
+        r.country||"",r.genres||"",r.styles||"",
         r.formats||"",r.discogsReleaseId?String(r.discogsReleaseId):"",
         r.coverUrl||"",r.createdAt?new Date(r.createdAt).toLocaleDateString("hu-HU"):""
       ]);
       const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
-      ws["!cols"]=[20,28,6,20,14,18,12,16,16,14,10,30,12].map(w=>({wch:w}));
+      ws["!cols"]=[20,28,6,20,14,12,16,16,14,10,30,12].map(w=>({wch:w}));
       const wb=XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb,ws,"LP Katalógus");
       const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.xlsx`;
       const wbArr=XLSX.write(wb,{bookType:"xlsx",type:"array"});
       const blob=new Blob([wbArr],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
       const file=new File([blob],name,{type:blob.type});
+      // Letöltés + megosztás kísérlet
+      const url=URL.createObjectURL(blob);
+      try{
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({title:"LP Gyűjtemény",files:[file]});
+          toast("Megosztás elindítva.");URL.revokeObjectURL(url);return;
+        }
+      }catch(e){if(e?.name!=="AbortError") console.warn(e);}
+      // Fallback: letöltés (Androidon Letöltések mappába kerül, onnan megosztható)
+      const a=document.createElement("a");a.href=url;a.download=name;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      toast("XLSX letöltve! Nyisd meg a Letöltések mappából és oszd meg Gmail-ben.");
+    }
+
+    async function exportPdf(){
+      const records=loadRecords();
+      if(!records.length){toast("Nincs mit exportálni.");return;}
+      toast("PDF generálás…");
+      // jsPDF betöltése
+      if(!window.jspdf){
+        await new Promise((res,rej)=>{
+          const s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload=res; s.onerror=rej;
+          document.head.appendChild(s);
+        });
+      }
+      const {jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+      const pageW=doc.internal.pageSize.getWidth();
+      const margin=14;
+      let y=margin;
+
+      // Fejléc
+      doc.setFontSize(18);doc.setFont("helvetica","bold");
+      doc.text("LP Katalógus",margin,y);y+=8;
+      doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(120);
+      doc.text("Exportálva: "+new Date().toLocaleDateString("hu-HU")+" — "+records.length+" lemez",margin,y);
+      y+=8;doc.setTextColor(0);
+
+      // Táblázat fejléc
+      const cols=["Előadó","Cím","Év","Kiadó","Kat.sz."];
+      const colW=[55,55,16,38,26];
+      doc.setFillColor(212,175,55);doc.setTextColor(17);doc.setFontSize(8);doc.setFont("helvetica","bold");
+      let x=margin;
+      cols.forEach((h,i)=>{
+        doc.rect(x,y,colW[i],6,"F");
+        doc.text(h,x+2,y+4.2);x+=colW[i];
+      });
+      y+=6;
+
+      // Sorok
+      doc.setFont("helvetica","normal");doc.setTextColor(30);
+      records.forEach((r,idx)=>{
+        if(y>272){doc.addPage();y=margin;}
+        if(idx%2===0){doc.setFillColor(248,248,248);let rx=margin;colW.forEach(w=>{doc.rect(rx,y,w,5.5,"F");rx+=w;});}
+        const vals=[r.artist||"",r.title||"",r.year||"",r.label||"",r.catno||""];
+        x=margin;
+        vals.forEach((v,i)=>{
+          const truncated=doc.splitTextToSize(String(v),colW[i]-3)[0]||"";
+          doc.text(truncated,x+2,y+3.8);x+=colW[i];
+        });
+        doc.setDrawColor(220);let rx2=margin;
+        colW.forEach(w=>{doc.rect(rx2,y,w,5.5,"S");rx2+=w;});
+        y+=5.5;
+      });
+
+      const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.pdf`;
+      const pdfBlob=doc.output("blob");
+      const file=new File([pdfBlob],name,{type:"application/pdf"});
       try{
         if(navigator.canShare&&navigator.canShare({files:[file]})){
           await navigator.share({title:"LP Gyűjtemény",files:[file]});
           toast("Megosztás elindítva.");return;
         }
       }catch(e){if(e?.name!=="AbortError") console.warn(e);}
-      // Ha canShare nem sikerült: toast üzenet
-      toast("A megosztás nem elérhető ezen az eszközön. Próbálj egy másik böngészőt.");
-    }
-
-    async function exportPdf(){
-      const records=loadRecords();
-      if(!records.length){toast("Nincs mit exportálni.");return;}
-      const rows=records.map(r=>`
-        <tr>
-          <td>${escapeText(r.artist||"—")}</td>
-          <td>${escapeText(r.title||"—")}</td>
-          <td>${escapeText(r.year||"")}</td>
-          <td>${escapeText(r.label||"")}</td>
-          <td>${escapeText(r.catno||"")}</td>
-          <td>${escapeText(GRADE_HU[r.grade]||r.grade||"")}</td>
-        </tr>`).join("");
-      const html=`<!doctype html><html><head><meta charset="utf-8"><title>LP Katalógus</title>
-        <style>
-          body{font-family:Arial,sans-serif;font-size:11px;color:#222;padding:24px;margin:0}
-          h1{font-size:20px;margin:0 0 4px;color:#111}
-          .sub{color:#888;font-size:10px;margin:0 0 18px}
-          table{width:100%;border-collapse:collapse}
-          th{background:#d4af37;color:#111;padding:7px 9px;text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
-          td{padding:6px 9px;border-bottom:1px solid #eee;vertical-align:top}
-          tr:nth-child(even) td{background:#fafafa}
-          @media print{body{padding:0}}
-        </style></head><body>
-        <h1>LP Katalógus</h1>
-        <p class="sub">Exportálva: ${new Date().toLocaleDateString("hu-HU")} — összesen ${records.length} lemez</p>
-        <table>
-          <thead><tr><th>Előadó</th><th>Cím</th><th>Év</th><th>Kiadó</th><th>Kat.sz.</th><th>Állapot</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table></body></html>`;
-      // PDF → Blob → Share
-      const blob=new Blob([html],{type:"text/html;charset=utf-8"});
-      const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.html`;
-      const file=new File([blob],name,{type:"text/html"});
-      try{
-        if(navigator.canShare&&navigator.canShare({files:[file]})){
-          await navigator.share({title:"LP Gyűjtemény PDF",files:[file]});
-          toast("Megosztás elindítva.");return;
-        }
-      }catch(e){if(e?.name!=="AbortError") console.warn(e);}
-      // Fallback: nyomtatható oldal megnyitása
-      const w=window.open("","_blank");
-      if(!w){toast("Engedélyezd a felugró ablakokat!");return;}
-      w.document.write(html);w.document.close();w.focus();
-      setTimeout(()=>{w.print();},600);
+      // Fallback: letöltés
+      const url=URL.createObjectURL(pdfBlob);
+      const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      URL.revokeObjectURL(url);
+      toast("PDF letöltve.");
     }
 
     // ── UI KÖTÉSEK ────────────────────────────────────────────────────────────
@@ -794,7 +803,6 @@
 
       $("#btnApproveSave").addEventListener("click",()=>{
         if(!state.preview) return;
-        const grade=$("#gradeSelect").value;
         const catno=($("#catnoInput").value||"").trim();
         // Duplikáció ellenőrzés
         const existing=loadRecords();
@@ -809,7 +817,7 @@
 Biztosan több példányod van belőle, és szeretnéd újra menteni?`);
           if(!yes) return;
         }
-        addRecord({...state.preview,grade,catno,updatedAt:new Date().toISOString()});
+        addRecord({...state.preview,catno,updatedAt:new Date().toISOString()});
         toast("Mentve a gyűjteménybe.");
         state.preview=null;
         $("#previewCard").classList.add("hidden");
