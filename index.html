@@ -107,8 +107,8 @@
     #view-collection .card.section > h2{flex-shrink:0}
     .coll-toolbar{display:flex;gap:8px;flex-shrink:0;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto}
     .coll-toolbar button{white-space:nowrap;flex-shrink:0;padding:10px 12px;font-size:13px}
-    #collectionEmpty{flex-shrink:0}
-    #collectionGrid{overflow-y:auto;flex:1;gap:8px}
+
+    #collectionGrid{gap:8px}
     .collectionGrid{display:flex;flex-direction:column;gap:8px}
     .item{padding:10px 12px;display:flex;gap:10px;align-items:center;cursor:pointer;transition:background .15s;overflow:hidden;min-width:0}
     .item:hover{background:rgba(212,175,55,.05)}
@@ -148,6 +148,11 @@
       font-size:12px;display:none;z-index:300;max-width:min(560px,92vw);text-align:center}
     .toast.show{display:block}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .btn-exit{background:rgba(255,255,255,.06);color:var(--muted);box-shadow:none;padding:10px 16px;font-size:13px;border:1px solid rgba(255,255,255,.08)}
+    .btn-exit:hover{background:rgba(255,91,91,.12);color:var(--danger);border-color:rgba(255,91,91,.3)}
+    #manualModal .modal-box{max-width:min(420px,calc(100vw - 24px))}
+    #manualModal input{font-size:16px;margin-top:4px}
+    #manualModal .modal-hint{font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.5}
   </style>
 </head>
 
@@ -183,6 +188,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><circle cx="12" cy="12" r="3" fill="#d4af37" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#d4af37" stroke-width="1.5"/></svg>
                 Alkalmazás telepítése
               </button>
+              <button class="btn-exit" id="btnExit">✕ Kilépés</button>
             </div>
           </div>
         </section>
@@ -209,6 +215,7 @@
                   <div class="btn-row">
                     <button class="btn-muted" id="btnStopScan">Leállítás</button>
                     <button class="btn-ghost" id="btnRetry">Újra</button>
+                    <button class="btn-ghost" id="btnManualSearch">Kézi keresés</button>
                   </div>
                 </div>
 
@@ -254,17 +261,19 @@
         <!-- Gyűjtemény -->
         <section id="view-collection" class="hidden">
           <div class="card section">
-            <h2>Gyűjteményem</h2>
+            <h2 style="flex-shrink:0">Gyűjteményem</h2>
             <div class="coll-toolbar">
               <button id="btnExportPdf">PDF</button>
               <button class="btn-ghost" id="btnExportXlsx">XLSX</button>
               <button class="btn-danger" id="btnDeleteSelected">Kijelölt törlése</button>
             </div>
-            <div id="collectionEmpty" class="card section" style="margin-top:0;background:rgba(255,255,255,.03);box-shadow:none;flex-shrink:0">
-              <h2>Nincs még lemez</h2>
-              <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">A gyűjteményed üres. Lépj a Kezdőlapra, és válaszd az <strong>„Új lemez beolvasása"</strong> gombot.</p>
+            <div id="collListScroll" style="flex:1;overflow-y:auto;min-height:0">
+              <div id="collectionEmpty" class="card section" style="margin-top:0;background:rgba(255,255,255,.03);box-shadow:none;">
+                <h2>Nincs még lemez</h2>
+                <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">A gyűjteményed üres. Lépj a Kezdőlapra, és válaszd az <strong>„Új lemez beolvasása"</strong> gombot.</p>
+              </div>
+              <div id="collectionGrid" class="collectionGrid hidden"></div>
             </div>
-            <div id="collectionGrid" class="collectionGrid hidden"></div>
           </div>
         </section>
 
@@ -284,6 +293,21 @@
         </div>
       </div>
       <div id="modalDetails"></div>
+    </div>
+  </div>
+
+  <!-- Kézi keresés modal -->
+  <div id="manualModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="btnManualClose" aria-label="Bezárás">✕</button>
+      <h2 style="margin:0 0 12px;font-size:16px;font-weight:800">Kézi keresés</h2>
+      <p class="modal-hint">Írd be a <strong>vonalkód számot</strong> (13 jegyű szám) vagy a <strong>katalógusszámot</strong> (pl. SLPX 1234), majd nyomj OK-t.</p>
+      <label for="manualInput">Vonalkód vagy katalógusszám</label>
+      <input id="manualInput" placeholder="pl. 5099750442227 vagy SLPX 1234" autocomplete="off" />
+      <div class="btn-row" style="margin-top:16px">
+        <button id="btnManualOk">OK – Keresés</button>
+        <button class="btn-ghost" id="btnManualCancel">Mégse</button>
+      </div>
     </div>
   </div>
 
@@ -661,6 +685,25 @@
       $("#detailModal").classList.add("hidden");
     }
 
+    // Kézi keresés
+    async function doManualSearch(){
+      const raw=($("#manualInput").value||"").trim();
+      if(!raw){toast("Írj be egy számot vagy katalógusszámot!");return;}
+      $("#manualModal").classList.add("hidden");
+      await stopScan(true);
+      // EAN-13 vonalkód (13 szám)?
+      if(/^\d{13}$/.test(raw)){
+        $("#foundCode").textContent=raw;
+        $("#foundSource").textContent="Kézi bevitel";
+        await fetchAndPreview({barcode:raw});
+      } else {
+        // Katalógusszám
+        $("#foundCode").textContent=raw;
+        $("#foundSource").textContent="Kézi bevitel";
+        await fetchAndPreview({catno:raw});
+      }
+    }
+
     // ── XLSX / PDF EXPORT ────────────────────────────────────────────────────
     async function exportXlsx(){
       const records=loadRecords();
@@ -695,10 +738,8 @@
           toast("Megosztás elindítva.");return;
         }
       }catch(e){if(e?.name!=="AbortError") console.warn(e);}
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
-      URL.revokeObjectURL(url);
-      toast("XLSX letöltve.");
+      // Ha canShare nem sikerült: toast üzenet
+      toast("A megosztás nem elérhető ezen az eszközön. Próbálj egy másik böngészőt.");
     }
 
     function exportPdf(){
@@ -730,11 +771,20 @@
           <thead><tr><th>Előadó</th><th>Cím</th><th>Év</th><th>Kiadó</th><th>Kat.sz.</th><th>Állapot</th></tr></thead>
           <tbody>${rows}</tbody>
         </table></body></html>`;
+      // PDF → Blob → Share
+      const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+      const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.html`;
+      const file=new File([blob],name,{type:"text/html"});
+      try{
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({title:"LP Gyűjtemény PDF",files:[file]});
+          toast("Megosztás elindítva.");return;
+        }
+      }catch(e){if(e?.name!=="AbortError") console.warn(e);}
+      // Fallback: nyomtatható oldal megnyitása
       const w=window.open("","_blank");
-      if(!w){toast("Engedélyezd a felugró ablakokat a PDF exporthoz.");return;}
-      w.document.write(html);
-      w.document.close();
-      w.focus();
+      if(!w){toast("Engedélyezd a felugró ablakokat!");return;}
+      w.document.write(html);w.document.close();w.focus();
       setTimeout(()=>{w.print();},600);
     }
 
@@ -779,10 +829,14 @@ Biztosan több példányod van belőle, és szeretnéd újra menteni?`);
       (()=>{
         const btn=$("#btnDeleteSelected");
         let pressTimer=null;
-        // Rövid kattintás: kijelöltek törlése
+        // Rövid kattintás: kijelöltek törlése; ha nincs kijelölve → összes törlése
         btn.addEventListener("click",()=>{
           const checked=[...document.querySelectorAll(".item-check:checked")].map(el=>parseInt(el.dataset.idx));
-          if(!checked.length){toast("Nincs kijelölt lemez.");return;}
+          if(!checked.length){
+            // Nincs kijelölt → kérdezzen rá az összes törlésére
+            if(!confirm("Nincs kijelölt lemez.\n\nMindet törölni szeretnéd?")) return;
+            saveRecords([]);toast("Gyűjtemény törölve.");renderCollection();return;
+          }
           if(!confirm(`Biztosan törlöd a ${checked.length} kijelölt lemezt?`)) return;
           const all=loadRecords();
           saveRecords(all.filter((_,i)=>!checked.includes(i)));
@@ -814,17 +868,40 @@ Biztosan több példányod van belőle, és szeretnéd újra menteni?`);
       nav.home.addEventListener("click",()=>setView("home"));
       nav.collection.addEventListener("click",()=>setView("collection"));
 
+      // Kilépés gomb
+      $("#btnExit").addEventListener("click",()=>{
+        try{ window.close(); }catch(_){}
+        // Ha window.close nem működik (nem script nyitotta), navigáljon üres lapra
+        setTimeout(()=>{ window.location.href="about:blank"; },200);
+      });
+
+      // Részletek modal
       $("#btnModalClose").addEventListener("click",closeDetailModal);
       $("#detailModal").addEventListener("click",e=>{if(e.target===$("#detailModal")) closeDetailModal();});
+
+      // Kézi keresés modal
+      $("#btnManualSearch").addEventListener("click",()=>{
+        $("#manualInput").value="";
+        $("#manualModal").classList.remove("hidden");
+        setTimeout(()=>$("#manualInput").focus(),100);
+      });
+      function closeManualModal(){ $("#manualModal").classList.add("hidden"); }
+      $("#btnManualClose").addEventListener("click",closeManualModal);
+      $("#btnManualCancel").addEventListener("click",closeManualModal);
+      $("#manualModal").addEventListener("click",e=>{if(e.target===$("#manualModal")) closeManualModal();});
+      $("#manualInput").addEventListener("keydown",e=>{if(e.key==="Enter") doManualSearch();});
+      $("#btnManualOk").addEventListener("click",doManualSearch);
 
       document.addEventListener("visibilitychange",()=>{if(document.hidden) stopScan(true);});
     }
 
-    // PWA install prompt
+    // PWA install prompt – csak ha nem standalone (nem telepített) módban fut
     let deferredInstallPrompt=null;
+    const isStandalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
     window.addEventListener("beforeinstallprompt",e=>{
       e.preventDefault();
       deferredInstallPrompt=e;
+      if(isStandalone) return; // már telepítve van, ne mutasd
       const btn=$("#btnInstallPwa");
       if(btn) btn.style.display="flex";
     });
