@@ -7,6 +7,7 @@
   <title>LP Katalógus</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%23121212'/%3E%3Ccircle cx='96' cy='96' r='72' fill='none' stroke='%23d4af37' stroke-width='12'/%3E%3Ccircle cx='96' cy='96' r='14' fill='%23d4af37'/%3E%3C/svg%3E" />
 
   <style>
     :root{
@@ -68,12 +69,18 @@
     .startup p{margin:0;color:var(--muted);text-align:center;max-width:520px;line-height:1.5;font-size:13px}
     .startup .cta{width:min(420px,100%);display:flex;flex-direction:column;gap:10px}
 
-    /* Scanner - mobilon alacsonyabb */
-    .scannerWrap{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:start}
-    @media (max-width:860px){.scannerWrap{grid-template-columns:1fr}}
-    .reader{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);background:#0b0b0b;min-height:240px}
-    #qr-reader{width:100%;height:100%;min-height:240px;position:relative}
-    @media (max-width:600px){.reader{min-height:200px} #qr-reader{min-height:200px}}
+    /* Scanner – négyzetes kamera, no-scroll */
+    .scannerWrap{display:flex;flex-direction:column;gap:12px}
+    /* A scan section maga ne scrolloljon – flexbox tölti ki a maradék helyet */
+    #view-scan{display:flex;flex-direction:column;height:calc(100vh - var(--navH) - env(safe-area-inset-bottom) - 56px);overflow:hidden}
+    #view-scan .card.section{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:0}
+    #view-scan .card.section > h2{flex-shrink:0}
+    .scannerWrap{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+    /* Négyzetes kamera: szélesség = magasság */
+    .reader{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);background:#0b0b0b;
+      width:100%;aspect-ratio:1/1;max-height:45vw;flex-shrink:0}
+    @media (max-width:600px){.reader{max-height:60vw}}
+    #qr-reader{position:absolute;inset:0;width:100%!important;height:100%!important}
     #qr-reader video{width:100%!important;height:100%!important;object-fit:cover;display:block!important}
     .viewfinder{pointer-events:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
     .vf-dim{position:absolute;inset:0;background:rgba(0,0,0,.22);
@@ -82,6 +89,8 @@
     .vf-box{width:min(72%,220px);aspect-ratio:1/1;border-radius:18px;border:2px solid rgba(212,175,55,.75);
       box-shadow:0 0 22px rgba(212,175,55,.12);position:relative}
     .vf-box:before{content:"";position:absolute;left:10px;right:10px;top:50%;height:1px;background:rgba(212,175,55,.35)}
+    /* Status + preview rész scrollolhat ha kell */
+    .status{overflow-y:auto;flex:1}
 
     .badge{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text);font-size:12px;font-weight:700}
     .badge.gold{border-color:rgba(212,175,55,.35)} .badge.ok{border-color:rgba(57,217,138,.35);color:var(--ok)} .badge.warn{border-color:rgba(255,91,91,.35);color:var(--danger)}
@@ -92,22 +101,27 @@
     .meta h3{margin:0 0 6px 0;font-size:16px;line-height:1.2}
     .meta p{margin:0;color:var(--muted);font-size:12px;line-height:1.4}
 
-    /* Gyűjtemény */
-    .collectionGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    @media (max-width:900px){.collectionGrid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:560px){.collectionGrid{grid-template-columns:1fr}}
-    .item{padding:12px;display:flex;gap:10px;align-items:center;cursor:pointer;transition:background .15s;position:relative}
+    /* Gyűjtemény – fix nav, scrollozható lista */
+    #view-collection{display:flex;flex-direction:column;height:calc(100vh - var(--navH) - env(safe-area-inset-bottom) - 56px);overflow:hidden}
+    #view-collection .card.section{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:0}
+    #view-collection .card.section > h2{flex-shrink:0}
+    .coll-toolbar{display:flex;gap:8px;flex-shrink:0;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto}
+    .coll-toolbar button{white-space:nowrap;flex-shrink:0;padding:10px 12px;font-size:13px}
+    #collectionEmpty{flex-shrink:0}
+    #collectionGrid{overflow-y:auto;flex:1;gap:8px}
+    .collectionGrid{display:flex;flex-direction:column;gap:8px}
+    .item{padding:10px 12px;display:flex;gap:10px;align-items:center;cursor:pointer;transition:background .15s;overflow:hidden;min-width:0}
     .item:hover{background:rgba(212,175,55,.05)}
     .item-check{width:18px;height:18px;flex:0 0 auto;accent-color:var(--gold);cursor:pointer}
-    .thumb{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);overflow:hidden;flex:0 0 auto}
+    .thumb{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);overflow:hidden;flex:0 0 auto}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .item .t{min-width:0;flex:1 1 auto}
-    .item .t .a{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-    .item .t .b{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .item .t{min-width:0;flex:1 1 auto;overflow:hidden}
+    .item .t .a{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+    .item .t .b{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
     /* Részletek modal */
-    .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px}
-    .modal-box{background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);width:100%;max-width:560px;max-height:88vh;overflow-y:auto;position:relative;padding:24px 20px 20px}
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:12px}
+    .modal-box{background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);width:100%;max-width:min(560px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;position:relative;padding:20px 16px 16px}
     .modal-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.1);border:none;color:var(--text);border-radius:50%;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none;padding:0;line-height:1}
     .modal-header{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;padding-right:40px}
     .modal-cover{width:110px;height:110px;border-radius:14px;object-fit:cover;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);flex:0 0 auto}
@@ -165,6 +179,10 @@
             <p>Katalógusépítés elegánsan: <strong>vonalkód</strong> elsőbbséggel, és ha kell <strong>OCR</strong> katalógusszámra. Mentés előtt mindig kapsz <strong>előnézetet</strong>.</p>
             <div class="cta">
               <button id="btnStartScan">Új lemez beolvasása</button>
+              <button class="btn-ghost" id="btnInstallPwa" style="display:none;align-items:center;gap:8px;justify-content:center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><circle cx="12" cy="12" r="3" fill="#d4af37" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#d4af37" stroke-width="1.5"/></svg>
+                Alkalmazás telepítése
+              </button>
             </div>
           </div>
         </section>
@@ -237,13 +255,12 @@
         <section id="view-collection" class="hidden">
           <div class="card section">
             <h2>Gyűjteményem</h2>
-            <div class="btn-row" style="margin-bottom:12px;flex-wrap:wrap">
-              <button id="btnExportPdf">PDF export</button>
-              <button class="btn-ghost" id="btnExportCsv">CSV export</button>
+            <div class="coll-toolbar">
+              <button id="btnExportPdf">PDF</button>
+              <button class="btn-ghost" id="btnExportXlsx">XLSX</button>
               <button class="btn-danger" id="btnDeleteSelected">Kijelölt törlése</button>
-              <button class="btn-muted" id="btnClearAll">Összes törlése</button>
             </div>
-            <div id="collectionEmpty" class="card section" style="margin-top:0;background:rgba(255,255,255,.03);box-shadow:none;">
+            <div id="collectionEmpty" class="card section" style="margin-top:0;background:rgba(255,255,255,.03);box-shadow:none;flex-shrink:0">
               <h2>Nincs még lemez</h2>
               <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">A gyűjteményed üres. Lépj a Kezdőlapra, és válaszd az <strong>„Új lemez beolvasása"</strong> gombot.</p>
             </div>
@@ -593,7 +610,6 @@
           <div class="t">
             <div class="a">${escapeText(rec.artist||"—")}</div>
             <div class="b">${escapeText(rec.title||"—")}</div>
-            <div class="a" style="margin-top:4px">${escapeText(summarizeRec(rec))}</div>
           </div>
         </div>`).join("");
 
@@ -645,29 +661,44 @@
       $("#detailModal").classList.add("hidden");
     }
 
-    // ── CSV / PDF EXPORT ──────────────────────────────────────────────────────
-    function toCsv(records){
-      const h=["Előadó","Cím","Év","Kiadó","Katalógusszám","Állapot","Ország","Műfaj","DiscogsReleaseId","BorítóURL","Létrehozva"];
-      const rows=records.map(r=>[r.artist,r.title,r.year,r.label,r.catno,GRADE_HU[r.grade]||r.grade,r.country,r.genres,r.discogsReleaseId,r.coverUrl,r.createdAt].map(csvEscape).join(","));
-      return h.join(",")+"\n"+rows.join("\n");
-    }
-
-    async function exportCsv(){
+    // ── XLSX / PDF EXPORT ────────────────────────────────────────────────────
+    async function exportXlsx(){
       const records=loadRecords();
       if(!records.length){toast("Nincs mit exportálni.");return;}
-      const csv=toCsv(records);
-      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-      const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.csv`;
+      toast("XLSX generálás…");
+      if(!window.XLSX){
+        await new Promise((res,rej)=>{
+          const s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+          s.onload=res; s.onerror=rej;
+          document.head.appendChild(s);
+        });
+      }
+      const headers=["Előadó","Cím","Év","Kiadó","Katalógusszám","Állapot","Ország","Műfaj","Stílus","Formátum","Discogs ID","Borító URL","Hozzáadva"];
+      const rows=records.map(r=>[
+        r.artist||"",r.title||"",r.year||"",r.label||"",r.catno||"",
+        GRADE_HU[r.grade]||r.grade||"",r.country||"",r.genres||"",r.styles||"",
+        r.formats||"",r.discogsReleaseId?String(r.discogsReleaseId):"",
+        r.coverUrl||"",r.createdAt?new Date(r.createdAt).toLocaleDateString("hu-HU"):""
+      ]);
+      const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+      ws["!cols"]=[20,28,6,20,14,18,12,16,16,14,10,30,12].map(w=>({wch:w}));
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,"LP Katalógus");
+      const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.xlsx`;
+      const wbArr=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+      const blob=new Blob([wbArr],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+      const file=new File([blob],name,{type:blob.type});
       try{
-        if(navigator.canShare&&navigator.canShare({files:[new File([blob],name,{type:blob.type})]})){
-          await navigator.share({title:"LP Gyűjtemény (CSV)",files:[new File([blob],name,{type:blob.type})]});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({title:"LP Gyűjtemény",files:[file]});
           toast("Megosztás elindítva.");return;
         }
-      }catch{}
+      }catch(e){if(e?.name!=="AbortError") console.warn(e);}
       const url=URL.createObjectURL(blob);
       const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
       URL.revokeObjectURL(url);
-      toast("CSV letöltve.");
+      toast("XLSX letöltve.");
     }
 
     function exportPdf(){
@@ -717,6 +748,19 @@
         if(!state.preview) return;
         const grade=$("#gradeSelect").value;
         const catno=($("#catnoInput").value||"").trim();
+        // Duplikáció ellenőrzés
+        const existing=loadRecords();
+        const dup=existing.find(r=>
+          r.discogsReleaseId && state.preview.discogsReleaseId &&
+          String(r.discogsReleaseId)===String(state.preview.discogsReleaseId)
+        );
+        if(dup){
+          const yes=confirm(`Ez a lemez már szerepel a gyűjteményben:
+"${dup.artist} — ${dup.title}"
+
+Biztosan több példányod van belőle, és szeretnéd újra menteni?`);
+          if(!yes) return;
+        }
         addRecord({...state.preview,grade,catno,updatedAt:new Date().toISOString()});
         toast("Mentve a gyűjteménybe.");
         state.preview=null;
@@ -729,24 +773,44 @@
         toast("Előnézet elutasítva.");
       });
 
-      $("#btnExportCsv").addEventListener("click",exportCsv);
+      $("#btnExportXlsx").addEventListener("click",exportXlsx);
       $("#btnExportPdf").addEventListener("click",exportPdf);
 
-      $("#btnDeleteSelected").addEventListener("click",()=>{
-        const checked=[...document.querySelectorAll(".item-check:checked")].map(el=>parseInt(el.dataset.idx));
-        if(!checked.length){toast("Nincs kijelölt lemez.");return;}
-        if(!confirm(`Biztosan törlöd a ${checked.length} kijelölt lemezt?`)) return;
-        const all=loadRecords();
-        saveRecords(all.filter((_,i)=>!checked.includes(i)));
-        toast(`${checked.length} lemez törölve.`);
-        renderCollection();
-      });
+      (()=>{
+        const btn=$("#btnDeleteSelected");
+        let pressTimer=null;
+        // Rövid kattintás: kijelöltek törlése
+        btn.addEventListener("click",()=>{
+          const checked=[...document.querySelectorAll(".item-check:checked")].map(el=>parseInt(el.dataset.idx));
+          if(!checked.length){toast("Nincs kijelölt lemez.");return;}
+          if(!confirm(`Biztosan törlöd a ${checked.length} kijelölt lemezt?`)) return;
+          const all=loadRecords();
+          saveRecords(all.filter((_,i)=>!checked.includes(i)));
+          toast(`${checked.length} lemez törölve.`);
+          renderCollection();
+        });
+        // Hosszan nyomva: összes törlése
+        btn.addEventListener("pointerdown",()=>{
+          pressTimer=setTimeout(()=>{
+            if(!confirm("Biztosan törlöd az összes mentett lemezt?")) return;
+            saveRecords([]);toast("Gyűjtemény törölve.");renderCollection();
+          },800);
+        });
+        ["pointerup","pointerleave","pointercancel"].forEach(ev=>
+          btn.addEventListener(ev,()=>clearTimeout(pressTimer))
+        );
+      })();
 
-      $("#btnClearAll").addEventListener("click",()=>{
-        if(!confirm("Biztosan törlöd az összes mentett lemezt?")) return;
-        saveRecords([]);toast("Gyűjtemény törölve.");renderCollection();
-      });
-
+      const installBtn=$("#btnInstallPwa");
+      if(installBtn){
+        installBtn.addEventListener("click",async()=>{
+          if(!deferredInstallPrompt) return;
+          deferredInstallPrompt.prompt();
+          const {outcome}=await deferredInstallPrompt.userChoice;
+          if(outcome==="accepted") installBtn.style.display="none";
+          deferredInstallPrompt=null;
+        });
+      }
       nav.home.addEventListener("click",()=>setView("home"));
       nav.collection.addEventListener("click",()=>setView("collection"));
 
@@ -755,6 +819,15 @@
 
       document.addEventListener("visibilitychange",()=>{if(document.hidden) stopScan(true);});
     }
+
+    // PWA install prompt
+    let deferredInstallPrompt=null;
+    window.addEventListener("beforeinstallprompt",e=>{
+      e.preventDefault();
+      deferredInstallPrompt=e;
+      const btn=$("#btnInstallPwa");
+      if(btn) btn.style.display="flex";
+    });
 
     window.addEventListener("load",async()=>{
       try{await waitForLibs();}
