@@ -145,7 +145,6 @@
       background:rgba(30,30,30,.96);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:10px 16px;border-radius:999px;box-shadow:var(--shadow);
       font-size:12px;display:none;z-index:300;max-width:min(560px,92vw);text-align:center;align-items:center;gap:8px}
     .toast.show{display:flex!important}
-    .toast.show{display:block}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
     .btn-exit{background:rgba(255,255,255,.06);color:var(--muted);box-shadow:none;padding:10px 16px;font-size:13px;border:1px solid rgba(255,255,255,.08)}
     .btn-exit:hover{background:rgba(255,91,91,.12);color:var(--danger);border-color:rgba(255,91,91,.3)}
@@ -291,6 +290,23 @@
       <div class="btn-row" style="margin-top:16px">
         <button id="btnManualOk">OK – Keresés</button>
         <button class="btn-ghost" id="btnManualCancel">Mégse</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drive feltöltési modal -->
+  <div id="driveModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:min(420px,calc(100vw - 24px));text-align:center">
+      <h2 style="margin:0 0 12px;font-size:17px;font-weight:800">📥 Fájl letöltve!</h2>
+      <p style="margin:0 0 6px;color:var(--muted);font-size:13px;line-height:1.6">
+        A fájl (<strong id="driveModalFilename"></strong>) a <strong>Letöltések</strong> mappába került.
+      </p>
+      <p style="margin:0 0 20px;color:var(--muted);font-size:13px;line-height:1.6">
+        Google Drive-ra való feltöltéshez nyisd meg a Drive-ot, és töltsd fel onnan.
+      </p>
+      <div class="btn-row" style="justify-content:center;gap:10px">
+        <button id="btnOpenDrive">Megnyitás Drive-ban ↗</button>
+        <button class="btn-ghost" id="btnCloseDriveModal">Bezárás</button>
       </div>
     </div>
   </div>
@@ -661,18 +677,10 @@
       $("#detailModal").classList.remove("hidden");
     }
 
-    // Drive feltöltési segítő
+    // Drive feltöltési segítő – modal ablakban jelenik meg
     function showDrivePrompt(filename){
-      // Megjelenítünk egy toast-ot Drive gombbal
-      const t=$("#toast");
-      t.innerHTML=`<span>📥 <strong>${filename}</strong> letöltve!</span>
-        <button onclick="window.open('https://drive.google.com/drive/my-drive','_blank')"
-          style="margin-left:10px;background:var(--gold);color:#121212;border:0;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">
-          Megnyitás Drive-ban ↗
-        </button>`;
-      t.classList.add("show");
-      clearTimeout(toast._tm);
-      toast._tm=setTimeout(()=>{t.classList.remove("show");t.textContent="";},7000);
+      $("#driveModalFilename").textContent=filename;
+      $("#driveModal").classList.remove("hidden");
     }
 
     function closeDetailModal(){
@@ -745,70 +753,69 @@
     async function exportPdf(){
       const records=loadRecords();
       if(!records.length){toast("Nincs mit exportálni.");return;}
-      toast("PDF generálás…");
-      // jsPDF betöltése
-      if(!window.jspdf){
-        await new Promise((res,rej)=>{
-          const s=document.createElement("script");
-          s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-          s.onload=res; s.onerror=rej;
-          document.head.appendChild(s);
-        });
-      }
-      const {jsPDF}=window.jspdf;
-      const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-      const pageW=doc.internal.pageSize.getWidth();
-      const margin=14;
-      let y=margin;
 
-      // Fejléc
-      doc.setFontSize(18);doc.setFont("helvetica","bold");
-      doc.text("LP Katalógus",margin,y);y+=8;
-      doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(120);
-      doc.text("Exportálva: "+new Date().toLocaleDateString("hu-HU")+" — "+records.length+" lemez",margin,y);
-      y+=8;doc.setTextColor(0);
+      // HTML alapú PDF generálás – a böngésző kezeli a magyar karaktereket
+      // Fekvő A4, az összes adat elfér
+      const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      const rows=records.map(r=>`<tr>
+        <td>${esc(r.artist)}</td>
+        <td>${esc(r.title)}</td>
+        <td>${esc(r.year)}</td>
+        <td>${esc(r.label)}</td>
+        <td>${esc(r.catno)}</td>
+        <td>${esc(r.country)}</td>
+        <td>${esc(r.genres)}</td>
+      </tr>`).join("");
 
-      // Táblázat fejléc
-      const cols=["Előadó","Cím","Év","Kiadó","Kat.sz."];
-      const colW=[55,55,16,38,26];
-      doc.setFillColor(212,175,55);doc.setTextColor(17);doc.setFontSize(8);doc.setFont("helvetica","bold");
-      let x=margin;
-      cols.forEach((h,i)=>{
-        doc.rect(x,y,colW[i],6,"F");
-        doc.text(h,x+2,y+4.2);x+=colW[i];
-      });
-      y+=6;
+      const html=`<!doctype html><html><head><meta charset="utf-8"><title>LP Katalógus</title>
+        <style>
+          @page{size:A4 landscape;margin:12mm}
+          *{box-sizing:border-box}
+          body{font-family:Arial,Helvetica,sans-serif;font-size:9px;color:#222;margin:0}
+          h1{font-size:16px;margin:0 0 2px;color:#111}
+          .sub{color:#888;font-size:8px;margin:0 0 8px}
+          table{width:100%;border-collapse:collapse;table-layout:fixed}
+          col.c-artist{width:18%}col.c-title{width:22%}col.c-year{width:5%}
+          col.c-label{width:16%}col.c-catno{width:10%}col.c-country{width:8%}col.c-genre{width:21%}
+          th{background:#d4af37;color:#111;padding:4px 5px;text-align:left;font-size:8px;font-weight:bold}
+          td{padding:3px 5px;border-bottom:1px solid #eee;vertical-align:top;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+          tr:nth-child(even) td{background:#f7f7f7}
+          @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        </style></head><body>
+        <h1>LP Katalógus</h1>
+        <p class="sub">Exportálva: ${new Date().toLocaleDateString("hu-HU")} — ${records.length} lemez</p>
+        <table>
+          <colgroup><col class="c-artist"><col class="c-title"><col class="c-year"><col class="c-label"><col class="c-catno"><col class="c-country"><col class="c-genre"></colgroup>
+          <thead><tr><th>Előadó</th><th>Cím</th><th>Év</th><th>Kiadó</th><th>Kat.sz.</th><th>Ország</th><th>Műfaj</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <script>window.onload=()=>{window.print();}<\/script>
+        </body></html>`;
 
-      // Sorok
-      doc.setFont("helvetica","normal");doc.setTextColor(30);
-      records.forEach((r,idx)=>{
-        if(y>272){doc.addPage();y=margin;}
-        if(idx%2===0){doc.setFillColor(248,248,248);let rx=margin;colW.forEach(w=>{doc.rect(rx,y,w,5.5,"F");rx+=w;});}
-        const vals=[r.artist||"",r.title||"",r.year||"",r.label||"",r.catno||""];
-        x=margin;
-        vals.forEach((v,i)=>{
-          const truncated=doc.splitTextToSize(String(v),colW[i]-3)[0]||"";
-          doc.text(truncated,x+2,y+3.8);x+=colW[i];
-        });
-        doc.setDrawColor(220);let rx2=margin;
-        colW.forEach(w=>{doc.rect(rx2,y,w,5.5,"S");rx2+=w;});
-        y+=5.5;
-      });
-
+      const blob=new Blob([html],{type:"text/html;charset=utf-8"});
       const name=`lp-gyujtemeny-${new Date().toISOString().slice(0,10)}.pdf`;
-      const pdfBlob=doc.output("blob");
-      const file=new File([pdfBlob],name,{type:"application/pdf"});
+      const htmlFile=new File([blob],name.replace(".pdf",".html"),{type:"text/html"});
+      // Share kísérlet (mobilon a "Nyomtatás" → PDF mentés flow)
       try{
-        if(navigator.canShare&&navigator.canShare({files:[file]})){
-          await navigator.share({title:"LP Gyűjtemény",files:[file]});
+        if(navigator.canShare&&navigator.canShare({files:[htmlFile]})){
+          await navigator.share({title:"LP Katalógus – PDF",files:[htmlFile]});
           toast("Megosztás elindítva.");return;
         }
       }catch(e){if(e?.name!=="AbortError") console.warn(e);}
-      // Fallback: letöltés, majd Drive megnyitása
-      const url=URL.createObjectURL(pdfBlob);
-      const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
-      URL.revokeObjectURL(url);
-      showDrivePrompt(name);
+      // Fallback: nyomtatható ablak megnyitása → Mentés PDF-ként
+      const w=window.open("","_blank","width=1000,height=700");
+      if(w){
+        w.document.write(html);
+        w.document.close();
+        toast("Nyomtatás ablak megnyílt → Mentés PDF-ként");
+      } else {
+        // Ha popup blokkolt: letöltés + Drive
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");a.href=url;a.download=name.replace(".pdf",".html");
+        document.body.appendChild(a);a.click();a.remove();
+        URL.revokeObjectURL(url);
+        showDrivePrompt(name.replace(".pdf",".html"));
+      }
     }
 
     // ── UI KÖTÉSEK ────────────────────────────────────────────────────────────
@@ -913,6 +920,18 @@ Biztosan több példányod van belőle, és szeretnéd újra menteni?`);
       $("#manualModal").addEventListener("click",e=>{if(e.target===$("#manualModal")) closeManualModal();});
       $("#manualInput").addEventListener("keydown",e=>{if(e.key==="Enter") doManualSearch();});
       $("#btnManualOk").addEventListener("click",doManualSearch);
+
+      // Drive modal
+      $("#btnOpenDrive").addEventListener("click",()=>{
+        window.open("https://drive.google.com/drive/my-drive","_blank");
+        $("#driveModal").classList.add("hidden");
+      });
+      $("#btnCloseDriveModal").addEventListener("click",()=>{
+        $("#driveModal").classList.add("hidden");
+      });
+      $("#driveModal").addEventListener("click",e=>{
+        if(e.target===$("#driveModal")) $("#driveModal").classList.add("hidden");
+      });
 
       document.addEventListener("visibilitychange",()=>{if(document.hidden) stopScan(true);});
     }
