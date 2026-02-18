@@ -311,100 +311,109 @@
     }
 
 async function startScan(){
-      // Ha már fut, vagy épp leállítás alatt van, ne indítsuk újra azonnal
       if(state.scanner.running) return;
-      
-      // Biztonsági takarítás indítás előtt
-      if(state.scanner.html5) { await stopScan(true); }
+      if(state.scanner.html5){ await stopScan(true); }
 
       setView("scan");
       setPill("Kamera indítása…");
       $("#previewCard").classList.add("hidden");
-      state.preview=null;
+      state.preview = null;
+      $("#foundCode").textContent = "—";
+      $("#foundSource").textContent = "—";
+      $("#ocrBadge").textContent = "Készenlétben";
+      $("#ocrBadge").className = "badge";
 
-      $("#foundCode").textContent="—"; $("#foundSource").textContent="—";
-      $("#ocrBadge").textContent="Készenlétben"; $("#ocrBadge").className="badge";
+      state.scanner.running = true;
+      state.scanner.barcodeFound = false;
+      $("#qr-reader").innerHTML = "";
 
-      state.scanner.running=true; state.scanner.barcodeFound=false;
+      const html5 = new Html5Qrcode("qr-reader");
+      state.scanner.html5 = html5;
 
-      // Töröljük a konténer tartalmát, hogy tiszta lappal induljunk
-      $("#qr-reader").innerHTML="";
-      
-      const html5=new Html5Qrcode("qr-reader");
-      state.scanner.html5=html5;
-
-      // --- A JAVÍTÁS ITT TÖRTÉNT ---
-      // Kivettem az aspectRatio: 1.0-t, mert az okozza a fekete képernyőt!
-      const config={ 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 }, 
-        experimentalFeatures: { useBarCodeDetectorIfSupported: true } 
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
       };
-      // -----------------------------
 
-      try{
-        const camera={ facingMode: "environment" };
+      // iOS: playsinline beállítása amint a video megjelenik a DOM-ban
+      const observer = new MutationObserver(()=>{
+        const v = document.querySelector("#qr-reader video");
+        if(v){
+          v.setAttribute("playsinline","");
+          v.setAttribute("webkit-playsinline","");
+          v.muted = true;
+          observer.disconnect();
+        }
+      });
+      observer.observe($("#qr-reader"), { childList: true, subtree: true });
 
-        const startPromise=html5.start(
-          camera, 
-          config,
-          async (decodedText)=>{
-            const cleaned=String(decodedText||"").replace(/\s/g,"");
-            // Csak számokat fogadunk el vonalkódnak (EAN-13)
-            if(!/^\d{13}$/.test(cleaned)) return;
-            
-            state.scanner.barcodeFound=true;
-            $("#foundCode").textContent=cleaned;
-            $("#foundSource").textContent="Vonalkód";
-            $("#ocrBadge").textContent="Nem szükséges"; $("#ocrBadge").className="badge ok";
-            
-            toast("Vonalkód észlelve: "+cleaned);
-            // Előbb állítsuk le a kamerát, aztán keressünk
-            await stopScan(true);
-            await fetchAndPreview({barcode:cleaned});
-          },
-          (errorMessage)=> {
-            // Ide jönnek a szkennelési hibák (pl. "nem talált kódot"), ezt ignoráljuk
-          }
-        );
+      // KRITIKUS: a html5-qrcode start() promise soha nem resolve-ol normál esetben!
+      // Csak kivételt dob hiba esetén. Ezért NEM await-eljük — .catch()-csel kezeljük.
+      html5.start(
+        { facingMode: "environment" },
+        config,
+        async (decodedText)=>{
+          const cleaned = String(decodedText||"").replace(/\s/g,"");
+          if(!/^\d{13}$/.test(cleaned)) return;
 
-        // Időkorlát a kamera indításra (ha a user nem nyom semmit)
-        const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error("CAMERA_START_TIMEOUT")),8000));
-        
-        // Várjuk meg, amíg elindul vagy időtúllépés lesz
-        await Promise.race([startPromise,timeoutPromise]);
-
-        // iOS hack: biztos ami biztos, kényszerítjük a playsinline-t
-        setTimeout(()=>{
-          const v=document.querySelector("#qr-reader video");
-          if(v){ 
-            v.setAttribute("playsinline","true"); 
-            v.setAttribute("webkit-playsinline","true"); 
-            v.muted=true; 
-            v.autoplay=true; 
-          }
-        }, 500);
-
-        setPill("Beolvasás");
-        scheduleOcrFallback(); // Indítjuk az OCR figyelést háttérben
-      }catch(e){
-        console.error("Kamera indítás hiba:",e);
-        state.scanner.running=false;
-        
-        // Takarítás hiba esetén
+          state.scanner.barcodeFound = true;
+          clearTimeout(state.scanner.startWatchdog);
+          $("#foundCode").textContent = cleaned;
+          $("#foundSource").textContent = "Vonalkód";
+          $("#ocrBadge").textContent = "Nem szükséges";
+          $("#ocrBadge").className = "badge ok";
+          toast("Vonalkód észlelve: "+cleaned);
+          await stopScan(true);
+          await fetchAndPreview({barcode: cleaned});
+        },
+        (_err)=>{ /* normál "nem olvasott" hibák — ignorálva */ }
+      ).catch(e=>{
+        observer.disconnect();
+        clearTimeout(state.scanner.startWatchdog);
+        console.error("Kamera indítás hiba:", e);
+        state.scanner.running = false;
         state.scanner.html5 = null;
         $("#qr-reader").innerHTML = "";
-
-        if(String(e?.message||e).includes("CAMERA_START_TIMEOUT")){
-          toast("A kamera nem indult el időben. Engedélyezd a hozzáférést!");
-        }else if(String(e?.message||e).includes("Permission")){
-           toast("Kamera hozzáférés megtagadva. Engedélyezd a böngészőben!");
-        }else{
-          toast("Kamera hiba: "+(e?.name||"ismeretlen"));
+        const msg = String(e?.message || e?.name || e || "").toLowerCase();
+        if(msg.includes("permission") || msg.includes("denied")){
+          toast("Kamera hozzáférés megtagadva. Engedélyezd a böngészőben!");
+        } else if(msg.includes("notfound") || msg.includes("no cameras")){
+          toast("Nem található kamera ezen az eszközön.");
+        } else if(msg.includes("https") || msg.includes("insecure")){
+          toast("Kamera csak HTTPS kapcsolaton elérhető!");
+        } else {
+          toast("Kamera hiba: "+(e?.message || e?.name || "ismeretlen"));
         }
         setPill("Hiba");
-        setView("home"); // Vissza a főoldalra hiba esetén
+        setView("home");
+      });
+
+      // Watchdog: figyeli, elindult-e tényleg a videókép
+      // - 1.5s után ellenőrzi (gyors eset)
+      // - 8s után feladja, ha még mindig nincs kép
+      function checkVideoReady(){
+        if(!state.scanner.running) return;
+        const v = getVideo();
+        if(v && v.readyState >= 2){
+          clearTimeout(state.scanner.startWatchdog);
+          setPill("Beolvasás");
+          scheduleOcrFallback();
+        }
       }
+      setTimeout(checkVideoReady, 1500);
+      state.scanner.startWatchdog = setTimeout(()=>{
+        if(!state.scanner.running) return;
+        const v = getVideo();
+        if(!v || v.readyState < 2){
+          toast("A kamera nem indult el. Ellenőrizd az engedélyeket!");
+          setPill("Hiba");
+          stopScan(false);
+        } else {
+          setPill("Beolvasás");
+          scheduleOcrFallback();
+        }
+      }, 8000);
     }
 
     function getVideo(){ return document.querySelector("#qr-reader video"); }
