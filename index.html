@@ -310,8 +310,13 @@
       }
     }
 
-    async function startScan(){
+async function startScan(){
+      // Ha már fut, vagy épp leállítás alatt van, ne indítsuk újra azonnal
       if(state.scanner.running) return;
+      
+      // Biztonsági takarítás indítás előtt
+      if(state.scanner.html5) { await stopScan(true); }
+
       setView("scan");
       setPill("Kamera indítása…");
       $("#previewCard").classList.add("hidden");
@@ -322,50 +327,83 @@
 
       state.scanner.running=true; state.scanner.barcodeFound=false;
 
+      // Töröljük a konténer tartalmát, hogy tiszta lappal induljunk
       $("#qr-reader").innerHTML="";
+      
       const html5=new Html5Qrcode("qr-reader");
       state.scanner.html5=html5;
 
-      const config={ fps:12, qrbox:{width:260,height:260}, aspectRatio:1.0, experimentalFeatures:{useBarCodeDetectorIfSupported:true} };
+      // --- A JAVÍTÁS ITT TÖRTÉNT ---
+      // Kivettem az aspectRatio: 1.0-t, mert az okozza a fekete képernyőt!
+      const config={ 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 }, 
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true } 
+      };
+      // -----------------------------
 
       try{
-        const camera={facingMode:"environment"};
+        const camera={ facingMode: "environment" };
 
         const startPromise=html5.start(
-          camera, config,
+          camera, 
+          config,
           async (decodedText)=>{
             const cleaned=String(decodedText||"").replace(/\s/g,"");
+            // Csak számokat fogadunk el vonalkódnak (EAN-13)
             if(!/^\d{13}$/.test(cleaned)) return;
+            
             state.scanner.barcodeFound=true;
             $("#foundCode").textContent=cleaned;
             $("#foundSource").textContent="Vonalkód";
             $("#ocrBadge").textContent="Nem szükséges"; $("#ocrBadge").className="badge ok";
+            
             toast("Vonalkód észlelve: "+cleaned);
+            // Előbb állítsuk le a kamerát, aztán keressünk
             await stopScan(true);
             await fetchAndPreview({barcode:cleaned});
           },
-          ()=>{}
+          (errorMessage)=> {
+            // Ide jönnek a szkennelési hibák (pl. "nem talált kódot"), ezt ignoráljuk
+          }
         );
 
-        const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error("CAMERA_START_TIMEOUT")),7000));
+        // Időkorlát a kamera indításra (ha a user nem nyom semmit)
+        const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error("CAMERA_START_TIMEOUT")),8000));
+        
+        // Várjuk meg, amíg elindul vagy időtúllépés lesz
         await Promise.race([startPromise,timeoutPromise]);
 
+        // iOS hack: biztos ami biztos, kényszerítjük a playsinline-t
         setTimeout(()=>{
           const v=document.querySelector("#qr-reader video");
-          if(v){ v.setAttribute("playsinline","true"); v.setAttribute("webkit-playsinline","true"); v.muted=true; v.autoplay=true; }
-        },400);
+          if(v){ 
+            v.setAttribute("playsinline","true"); 
+            v.setAttribute("webkit-playsinline","true"); 
+            v.muted=true; 
+            v.autoplay=true; 
+          }
+        }, 500);
 
         setPill("Beolvasás");
-        scheduleOcrFallback();
+        scheduleOcrFallback(); // Indítjuk az OCR figyelést háttérben
       }catch(e){
         console.error("Kamera indítás hiba:",e);
         state.scanner.running=false;
-        if(String(e?.message||e)==="CAMERA_START_TIMEOUT"){
-          toast("A kamera indítása nem válaszol. Engedélyezd a kamerát a webhelyhez, majd frissíts.");
+        
+        // Takarítás hiba esetén
+        state.scanner.html5 = null;
+        $("#qr-reader").innerHTML = "";
+
+        if(String(e?.message||e).includes("CAMERA_START_TIMEOUT")){
+          toast("A kamera nem indult el időben. Engedélyezd a hozzáférést!");
+        }else if(String(e?.message||e).includes("Permission")){
+           toast("Kamera hozzáférés megtagadva. Engedélyezd a böngészőben!");
         }else{
-          toast("Kamera hiba: "+(e?.name||"")+" — "+(e?.message||e));
+          toast("Kamera hiba: "+(e?.name||"ismeretlen"));
         }
         setPill("Hiba");
+        setView("home"); // Vissza a főoldalra hiba esetén
       }
     }
 
