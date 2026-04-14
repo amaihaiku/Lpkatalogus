@@ -1,0 +1,13 @@
+.pio/
+output.map
+partitions.bin
+bootloader.bin
+firmware.bin
+firmware.elf
+data/
+desktop/
+docs/
+firmware/
+keyboard-server/
+utils/
+test/
