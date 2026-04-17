@@ -116,6 +116,37 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
+    bool rowDirty = firstDraw;
+    if (!rowDirty) {
+      for (int attrX = 0; attrX < 32; attrX++) {
+        uint8_t attr = *(attrBase + 32 * attrY + attrX);
+        if ((attr & B10000000) != 0 && flashTimer < 16) {
+          uint8_t inkColor = attr & B00000111;
+          uint8_t paperColor = (attr & B00111000) >> 3;
+          uint8_t temp = inkColor;
+          inkColor = paperColor;
+          paperColor = temp;
+          attr = (attr & B11000000) | (inkColor & B00000111) | ((paperColor << 3) & B00111000);
+        }
+        if (attr != *(attrBaseCopy + 32 * attrY + attrX)) {
+          rowDirty = true;
+          break;
+        }
+      }
+      if (!rowDirty) {
+        int screenY = attrY * 8;
+        for (int y = 0; y < 8; y++) {
+          int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+          if (memcmp(pixelBase + 32 * scan, pixelBaseCopy + 32 * scan, 32) != 0) {
+            rowDirty = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!rowDirty) continue;
+
     bool dirty = false;
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
