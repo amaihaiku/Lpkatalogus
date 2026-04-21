@@ -1,0 +1,3 @@
+## 2024-05-18 - [TFT Screen Update Skip]
+**Learning:** For rendering ZX Spectrum displays block by block, updating the screen every frame per block even when the attributes and pixels are not dirty forces slow redundant memory copy calls into `pixelBuffer` and SPI bus transmissions. The calculation of the `pixelBuffer` uses nested loops making evaluating pixels very expensive.
+**Action:** Implemented a pre-pass per 8-pixel high row utilizing fast `memcmp` comparisons across row width. It completely skips unchanged rows, preserving previous buffer states untouched and increasing renderer FPS considerably.
