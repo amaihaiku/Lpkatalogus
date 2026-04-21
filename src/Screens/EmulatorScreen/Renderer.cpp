@@ -116,7 +116,40 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
-    bool dirty = false;
+    bool dirty = firstDraw;
+
+    // Pre-pass: check if the row is dirty before doing expensive pixel conversion
+    if (!dirty) {
+      for (int attrX = 0; attrX < 256 / 8; attrX++) {
+        uint8_t attr = *(attrBase + 32 * attrY + attrX);
+        if ((attr & B10000000) != 0 && flashTimer < 16) {
+          uint8_t inkColor = attr & B00000111;
+          uint8_t paperColor = (attr & B00111000) >> 3;
+          attr = (attr & B11000000) | (paperColor & B00000111) | ((inkColor << 3) & B00111000);
+        }
+        if (attr != *(attrBaseCopy + 32 * attrY + attrX)) {
+          dirty = true;
+          break;
+        }
+      }
+      if (!dirty) {
+        for (int y = 0; y < 8; y++) {
+          int screenY = attrY * 8;
+          int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+          if (memcmp(pixelBase + 32 * scan, pixelBaseCopy + 32 * scan, 32) != 0) {
+            dirty = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // If nothing changed in this entire 8-pixel high row, skip it completely
+    if (!dirty) {
+      continue;
+    }
+
+    dirty = false; // Reset dirty flag for the actual copy/update phase
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
