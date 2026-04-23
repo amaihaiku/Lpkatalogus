@@ -116,6 +116,10 @@ protected:
   uint16_t textcolor;
   uint16_t textbgcolor;
 
+  // Cache for ASCII glyphs to avoid O(N) font lookups
+  Glyph _asciiGlyphCache[128];
+  bool _asciiGlyphCacheValid[128] = {false};
+
   // The current font
   Font currentFont;
 };
