@@ -169,6 +169,10 @@ void Display::loadFont(const uint8_t *fontData)
     return;
   }
   currentFont.fontData = fontData;
+
+  // Clear the ASCII glyph cache
+  std::fill(_asciiGlyphCacheValid, _asciiGlyphCacheValid + 128, false);
+
   // Read font metadata with endianness correction
   currentFont.gCount = readUInt32(fontData);
   uint32_t version = readUInt32(fontData + 4);
@@ -186,6 +190,12 @@ void Display::setTextColor(uint16_t color, uint16_t bgColor)
 
 Glyph Display::getGlyphData(uint32_t unicode)
 {
+  // Check the cache first for ASCII characters
+  if (unicode < 128 && _asciiGlyphCacheValid[unicode])
+  {
+    return _asciiGlyphCache[unicode];
+  }
+
   const uint8_t *fontPtr = currentFont.fontData + 24;
   const uint8_t *bitmapPtr = currentFont.fontData + 24 + currentFont.gCount * 28;
 
@@ -208,6 +218,14 @@ Glyph Display::getGlyphData(uint32_t unicode)
       glyph.dX = dX;
       glyph.dY = dY;
       glyph.bitmap = bitmapPtr;
+
+      // Store in cache if ASCII
+      if (unicode < 128)
+      {
+        _asciiGlyphCache[unicode] = glyph;
+        _asciiGlyphCacheValid[unicode] = true;
+      }
+
       return glyph;
     }
 
@@ -235,24 +253,28 @@ void Display::drawGlyph(const Glyph &glyph, int x, int y)
 {
   // Iterate over each pixel in the glyph's bitmap
   const uint8_t *bitmap = glyph.bitmap;
-  uint16_t pixelBuffer[glyph.width * glyph.height] = {textbgcolor};
+
+  uint16_t pixelBuffer[glyph.width * glyph.height];
+
+  // Pre-calculate foreground and background colors
+  uint16_t fg = textcolor;
+  uint16_t bg = textbgcolor;
+
+  // Extract the red, green and blue
+  uint8_t fgRed = (fg >> 11) & 0x1F;
+  uint8_t fgGreen = (fg >> 5) & 0x3F;
+  uint8_t fgBlue = fg & 0x1F;
+
+  uint8_t bgRed = (bg >> 11) & 0x1F;
+  uint8_t bgGreen = (bg >> 5) & 0x3F;
+  uint8_t bgBlue = bg & 0x1F;
+
   for (int j = 0; j < glyph.height; j++)
   {
     for (int i = 0; i < glyph.width; i++)
     {
       // Get the alpha value for the current pixel (1 byte per pixel)
       uint8_t alpha = bitmap[j * glyph.width + i];
-      // blend between the text color and the background color
-      uint16_t fg = textcolor;
-      uint16_t bg = textbgcolor;
-      // extract the red, green and blue
-      uint8_t fgRed = (fg >> 11) & 0x1F;
-      uint8_t fgGreen = (fg >> 5) & 0x3F;
-      uint8_t fgBlue = fg & 0x1F;
-
-      uint8_t bgRed = (bg >> 11) & 0x1F;
-      uint8_t bgGreen = (bg >> 5) & 0x3F;
-      uint8_t bgBlue = bg & 0x1F;
 
       uint8_t red = ((fgRed * alpha) + (bgRed * (255 - alpha))) / 255;
       uint8_t green = ((fgGreen * alpha) + (bgGreen * (255 - alpha))) / 255;
