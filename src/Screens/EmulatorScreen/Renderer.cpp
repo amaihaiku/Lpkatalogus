@@ -116,6 +116,15 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
+    int screenY = attrY * 8;
+    int scanLines[8];
+    // ⚡ Bolt: Performance improvement
+    // Hoist the complex bitwise offset calculations out of the inner loop.
+    // The ZX Spectrum scanlines are identical across all 32 character blocks in a row.
+    // This saves ~6000 calculations per frame.
+    for (int y = 0; y < 8; y++) {
+      scanLines[y] = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+    }
     bool dirty = false;
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
@@ -154,8 +163,7 @@ void Renderer::drawSpectrumScreen() {
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = scanLines[y];
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data

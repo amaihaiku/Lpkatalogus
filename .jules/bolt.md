@@ -1,0 +1,3 @@
+## 2024-04-29 - Loop Invariant Hoisting in Emulator Scanline Rendering
+**Learning:** The ZX Spectrum video memory format calculates a highly non-linear scanline offset for every single pixel block (`(screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3)`). Because these offset maps are identical for every character block in a given row, calculating this in the innermost pixel loop wastes thousands of cycles per frame.
+**Action:** When optimizing emulator rendering or other highly nested matrix rendering code, always check if offset/pointer arithmetic can be hoisted out of inner `x` coordinate loops into the outer `y` coordinate loops.
