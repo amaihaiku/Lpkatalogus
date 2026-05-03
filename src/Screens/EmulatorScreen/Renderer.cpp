@@ -116,29 +116,60 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
-    bool dirty = false;
+    bool rowDirty = firstDraw;
+
+    // Fast path to check if this 8-pixel high character row needs rendering
+    if (!rowDirty) {
+      // Check attributes
+      if (memcmp(attrBase + 32 * attrY, attrBaseCopy + 32 * attrY, 32) != 0) {
+        rowDirty = true;
+      } else if (flashTimer == 0 || flashTimer == 16) {
+        // Need to check for flashing attributes when the flash state actually toggles
+        for (int attrX = 0; attrX < 32; attrX++) {
+          if ((*(attrBase + 32 * attrY + attrX) & 0x80) != 0) {
+            rowDirty = true;
+            break;
+          }
+        }
+      }
+
+      // Check pixels
+      if (!rowDirty) {
+        for (int y = 0; y < 8; y++) {
+          int screenY = attrY * 8;
+          int scan = (screenY & 0xC0) + (y << 3) + ((screenY & 0x38) >> 3);
+          if (memcmp(pixelBase + 32 * scan, pixelBaseCopy + 32 * scan, 32) != 0) {
+            rowDirty = true;
+            break;
+          }
+        }
+      }
+    }
+
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
       uint8_t attr = *(attrBase + 32 * attrY + attrX);
-      uint8_t inkColor = attr & B00000111;
-      uint8_t paperColor = (attr & B00111000) >> 3;
+      uint8_t inkColor = attr & 0x07;
+      uint8_t paperColor = (attr & 0x38) >> 3;
       // check for changes in the attribute
-      if ((attr & B10000000) != 0 && flashTimer < 16)
+      if ((attr & 0x80) != 0 && flashTimer < 16)
       {
         // we are flashing we need to swap the ink and paper colors
-        uint8_t temp = inkColor;
-        inkColor = paperColor;
-        paperColor = temp;
+        std::swap(inkColor, paperColor);
         // update the attribute with the new colors - this makes our dirty check work
-        attr = (attr & B11000000) | (inkColor & B00000111) | ((paperColor << 3) & B00111000);
+        attr = (attr & 0xC0) | inkColor | (paperColor << 3);
       }
       if (attr != *(attrBaseCopy + 32 * attrY + attrX))
       {
-        dirty = true;
+
         *(attrBaseCopy + 32 * attrY + attrX) = attr;
       }
-      if ((attr & B01000000) != 0)
+
+      if (!rowDirty) continue; // Skip pixel decoding if not dirty
+
+      if ((attr & 0x40) != 0)
       {
         inkColor = inkColor + 8;
         paperColor = paperColor + 8;
@@ -155,13 +186,13 @@ void Renderer::drawSpectrumScreen() {
       {
         // read the value of the pixels
         int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = (screenY & 0xC0) + (y << 3) + ((screenY & 0x38) >> 3);
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data
         if (row != rowCopy)
         {
-          dirty = true;
+
           *(pixelBaseCopy + 32 * scan + attrX) = row;
         }
         uint16_t *pixelAddress = pixelBuffer + 256 * y + attrX * 8;
@@ -194,7 +225,7 @@ void Renderer::drawSpectrumScreen() {
         }
       }
     }
-    if (dirty || firstDraw)
+    if (rowDirty || firstDraw)
     {
       if (!isShowingMenu || borderHeight + attrY * 8 < m_tft.height() - VOLUME_BAR_HEIGHT) {
         m_tft.setWindow(borderWidth, borderHeight + attrY * 8, borderWidth + 255, borderHeight + attrY * 8 + 7);
