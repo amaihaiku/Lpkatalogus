@@ -1,0 +1,3 @@
+## 2024-05-24 - Removing redundant state evaluation in Z80 tight loop
+**Learning:** Found a classic anti-pattern in the emulator core: a boolean flag (`romLoadingRoutineHit`) was being unconditionally evaluated and overwritten on *every single instruction execution* (millions of times per second), but it was only actually read *after* the frame execution finished. This meant the flag's final value was simply the state of the last executed instruction, rendering all intermediate evaluations useless.
+**Action:** Look for state variables updated unconditionally inside tight loops (like CPU emulators, rendering loops) that are only read outside the loop. Move the evaluation to after the loop using the loop's final state to save massive amounts of CPU cycles.
