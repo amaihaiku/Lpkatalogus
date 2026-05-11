@@ -1,0 +1,3 @@
+## 2024-05-11 - ZX Spectrum Emulator Render Bottleneck
+**Learning:** Found a major bottleneck in `Renderer::drawSpectrumScreen()`. It iterated through 6912 bytes and completely recalculated the screen buffer *every frame*, regardless of changes. While memory dirty flags exist, they track the entire 16KB bank, not individual display blocks.
+**Action:** Used `memcmp` on the 32-byte pixel rows and 32-byte attribute rows as a pre-pass. Because the emulator uses a dual-buffer approach (`screenBuffer` vs `currentScreenBuffer`), `memcmp` serves as an extremely fast, vector-optimized check to avoid unnecessary inner loops. When working on retro emulators, always look for ways to quickly reject static screen areas.
