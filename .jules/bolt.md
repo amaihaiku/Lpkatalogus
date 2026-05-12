@@ -1,0 +1,3 @@
+## 2024-05-12 - Cached VLW Font Glyphs for O(1) text rendering
+**Learning:** The VLW font rendering logic (`src/TFT/Display.cpp`) previously implemented `getGlyphData` using a linear $O(N)$ scan of raw bytes. Because VLW fonts encode character metadata iteratively, the app was dynamically parsing the entire array, including repeated byte-order swapping and multiplication per glyph, for every single character printed on the display. This was a massive bottleneck for rendering speed.
+**Action:** When working with sequentially serialized lookup tables (like the VLW fonts), pre-calculate and cache structures (`std::vector<Glyph>`) at load time and use $O(\log N)$ or $O(1)$ lookups (e.g. binary search on sorted unicode metadata) instead of doing inline processing loop.

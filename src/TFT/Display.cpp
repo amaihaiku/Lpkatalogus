@@ -176,16 +176,11 @@ void Display::loadFont(const uint8_t *fontData)
   uint32_t mboxY = readUInt32(fontData + 12);
   currentFont.ascent = readUInt32(fontData + 16);
   currentFont.descent = readUInt32(fontData + 20);
-}
 
-void Display::setTextColor(uint16_t color, uint16_t bgColor)
-{
-  textcolor = color;
-  textbgcolor = bgColor;
-}
+  // Pre-calculate and cache glyph metadata
+  currentGlyphs.clear();
+  currentGlyphs.reserve(currentFont.gCount);
 
-Glyph Display::getGlyphData(uint32_t unicode)
-{
   const uint8_t *fontPtr = currentFont.fontData + 24;
   const uint8_t *bitmapPtr = currentFont.fontData + 24 + currentFont.gCount * 28;
 
@@ -198,27 +193,58 @@ Glyph Display::getGlyphData(uint32_t unicode)
     int32_t dY = readInt32(fontPtr + 16);
     int32_t dX = readInt32(fontPtr + 20);
 
-    if (glyphUnicode == unicode)
-    {
-      Glyph glyph;
-      glyph.unicode = glyphUnicode;
-      glyph.width = width;
-      glyph.height = height;
-      glyph.gxAdvance = gxAdvance;
-      glyph.dX = dX;
-      glyph.dY = dY;
-      glyph.bitmap = bitmapPtr;
-      return glyph;
-    }
+    Glyph glyph;
+    glyph.unicode = glyphUnicode;
+    glyph.width = width;
+    glyph.height = height;
+    glyph.gxAdvance = gxAdvance;
+    glyph.dX = dX;
+    glyph.dY = dY;
+    glyph.bitmap = bitmapPtr;
+
+    currentGlyphs.push_back(glyph);
 
     // Move to next glyph (28 bytes for metadata + bitmap size)
     fontPtr += 28;
     bitmapPtr += width * height;
   }
+}
+
+void Display::setTextColor(uint16_t color, uint16_t bgColor)
+{
+  textcolor = color;
+  textbgcolor = bgColor;
+}
+
+Glyph Display::getGlyphData(uint32_t unicode)
+{
+  if (currentGlyphs.empty()) {
+    Serial.printf("Glyphs not cached\n");
+    return Glyph();
+  }
+
+  // Binary search for the glyph since unicode values are sorted
+  int low = 0;
+  int high = currentGlyphs.size() - 1;
+
+  while (low <= high) {
+    int mid = low + (high - low) / 2;
+    if (currentGlyphs[mid].unicode == unicode) {
+      return currentGlyphs[mid];
+    } else if (currentGlyphs[mid].unicode < unicode) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
 
   // Return default glyph if not found
-  Serial.printf("Glyph not found: %c\n", unicode);
-  return getGlyphData(' ');
+  if (unicode != ' ') {
+    Serial.printf("Glyph not found: %c\n", unicode);
+    return getGlyphData(' ');
+  }
+
+  return currentGlyphs[0]; // fallback
 }
 
 void Display::drawPixel(uint16_t color, int x, int y)
