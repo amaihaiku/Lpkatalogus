@@ -118,4 +118,5 @@ protected:
 
   // The current font
   Font currentFont;
+  std::vector<Glyph> currentGlyphs;
 };
