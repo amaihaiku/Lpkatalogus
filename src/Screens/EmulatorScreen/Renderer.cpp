@@ -117,6 +117,45 @@ void Renderer::drawSpectrumScreen() {
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
     bool dirty = false;
+
+    // Fast path: Check if the entire attribute row has changed
+    bool attrChanged = memcmp(attrBase + 32 * attrY, attrBaseCopy + 32 * attrY, 32) != 0;
+
+    // Precalculate scan line indices for this attribute row
+    int screenY = attrY * 8;
+    int scan[8];
+    bool pixelRowChanged[8] = {false};
+    bool anyPixelChanged = false;
+
+    for (int y = 0; y < 8; y++) {
+      scan[y] = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+      // Fast path: Check if entire pixel row has changed
+      if (memcmp(pixelBase + 32 * scan[y], pixelBaseCopy + 32 * scan[y], 32) != 0) {
+        pixelRowChanged[y] = true;
+        anyPixelChanged = true;
+      }
+    }
+
+    // Fast check for flashing attributes changing state
+    bool flashStateChanged = false;
+    if (!attrChanged && !anyPixelChanged && !firstDraw) {
+        // If we crossed the half-second boundary (flashTimer 0 or 16), flash state just flipped.
+        // We only need to check if ANY character in this row actually HAS the flash bit set.
+        if (flashTimer == 0 || flashTimer == 16) {
+            for (int attrX = 0; attrX < 32; attrX++) {
+                if (*(attrBaseCopy + 32 * attrY + attrX) & B10000000) {
+                    flashStateChanged = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // If nothing changed in this entire 8-pixel high row, skip it!
+    if (!firstDraw && !attrChanged && !anyPixelChanged && !flashStateChanged) {
+      continue;
+    }
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
@@ -154,15 +193,13 @@ void Renderer::drawSpectrumScreen() {
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
-        uint8_t row = *(pixelBase + 32 * scan + attrX);
-        uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
+        uint8_t row = *(pixelBase + 32 * scan[y] + attrX);
+        uint8_t rowCopy = *(pixelBaseCopy + 32 * scan[y] + attrX);
         // check for changes in the pixel data
         if (row != rowCopy)
         {
           dirty = true;
-          *(pixelBaseCopy + 32 * scan + attrX) = row;
+          *(pixelBaseCopy + 32 * scan[y] + attrX) = row;
         }
         uint16_t *pixelAddress = pixelBuffer + 256 * y + attrX * 8;
         // Since the ESP32 is a 32-bit processor with a 32-bit memory bus,
@@ -194,7 +231,9 @@ void Renderer::drawSpectrumScreen() {
         }
       }
     }
-    if (dirty || firstDraw)
+
+    // If flashStateChanged is true, we know we must redraw it (because dirty wouldn't be set if underlying bytes didn't change, but effective color did)
+    if (dirty || firstDraw || flashStateChanged)
     {
       if (!isShowingMenu || borderHeight + attrY * 8 < m_tft.height() - VOLUME_BAR_HEIGHT) {
         m_tft.setWindow(borderWidth, borderHeight + attrY * 8, borderWidth + 255, borderHeight + attrY * 8 + 7);
