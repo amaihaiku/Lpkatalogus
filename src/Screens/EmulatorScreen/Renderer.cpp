@@ -117,6 +117,42 @@ void Renderer::drawSpectrumScreen() {
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
     bool dirty = false;
+
+    // Check if the entire 8-pixel row (attributes and pixels) is unchanged
+    // If it is, and we're not on the first draw, we might be able to skip the entire row processing.
+    if (!firstDraw) {
+      bool rowChanged = false;
+      // 1. Fast check attributes for this row
+      if (memcmp(attrBase + 32 * attrY, attrBaseCopy + 32 * attrY, 32) != 0) {
+        rowChanged = true;
+      } else {
+        // Even if attributes match in memory, we need to check if they have flash set
+        // If flash is set, we must process them to swap colors based on the flash timer
+        for (int attrX = 0; attrX < 32; attrX++) {
+          if (*(attrBase + 32 * attrY + attrX) & B10000000) {
+            rowChanged = true;
+            break;
+          }
+        }
+      }
+
+      // 2. Fast check pixels for this row
+      if (!rowChanged) {
+        int screenY = attrY * 8;
+        for (int y = 0; y < 8; y++) {
+          int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+          if (memcmp(pixelBase + 32 * scan, pixelBaseCopy + 32 * scan, 32) != 0) {
+            rowChanged = true;
+            break;
+          }
+        }
+      }
+
+      if (!rowChanged) {
+        continue; // Skip the heavy pixel translation for this row entirely
+      }
+    }
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
@@ -151,10 +187,11 @@ void Renderer::drawSpectrumScreen() {
         tftInkColor | (tftPaperColor << 16), // 10
         tftInkColor | (tftInkColor << 16) // 11
       };
+
+      int screenY = attrY * 8;
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
         int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
