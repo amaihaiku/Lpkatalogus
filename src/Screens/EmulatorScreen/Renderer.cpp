@@ -110,17 +110,26 @@ void Renderer::drawSpectrumScreen() {
   // Draw the left and right borders
   drawBorder(borderHeightSkip, screenHeight - borderHeight - bottomBorderSkip, borderOffset, borderWidth, screenWidth, borderHeight, true);
   // do the pixels
+  // Optimization: use pointers instead of array indexing for attributes to save arithmetic ops
   uint8_t *attrBase = currentScreenBuffer + 0x1800;
   uint8_t *pixelBase = currentScreenBuffer;
   uint8_t *attrBaseCopy = screenBuffer + 0x1800;
   uint8_t *pixelBaseCopy = screenBuffer;
+
+  uint8_t *currAttrPtr = attrBase;
+  uint8_t *copyAttrPtr = attrBaseCopy;
+
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
     bool dirty = false;
+    // Optimization: hoist the screenY and baseScan calculations out of the inner loop
+    int screenY = attrY * 8;
+    int baseScan = (screenY & B11000000) + ((screenY & B111000) >> 3);
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
-      uint8_t attr = *(attrBase + 32 * attrY + attrX);
+      uint8_t attr = *currAttrPtr;
       uint8_t inkColor = attr & B00000111;
       uint8_t paperColor = (attr & B00111000) >> 3;
       // check for changes in the attribute
@@ -133,11 +142,14 @@ void Renderer::drawSpectrumScreen() {
         // update the attribute with the new colors - this makes our dirty check work
         attr = (attr & B11000000) | (inkColor & B00000111) | ((paperColor << 3) & B00111000);
       }
-      if (attr != *(attrBaseCopy + 32 * attrY + attrX))
+      if (attr != *copyAttrPtr)
       {
         dirty = true;
-        *(attrBaseCopy + 32 * attrY + attrX) = attr;
+        *copyAttrPtr = attr;
       }
+      currAttrPtr++;
+      copyAttrPtr++;
+
       if ((attr & B01000000) != 0)
       {
         inkColor = inkColor + 8;
@@ -151,20 +163,27 @@ void Renderer::drawSpectrumScreen() {
         tftInkColor | (tftPaperColor << 16), // 10
         tftInkColor | (tftInkColor << 16) // 11
       };
+
+      // Optimization: calculate pixelAddress outside inner loop, incrementing linearly
+      uint16_t *pixelAddress = pixelBuffer + attrX * 8;
+
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
-        uint8_t row = *(pixelBase + 32 * scan + attrX);
-        uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
+        // Optimization: hoisted scan calculation inside inner loop
+        int scan = baseScan + (y << 3);
+        uint8_t *pixelRowPtr = pixelBase + 32 * scan + attrX;
+        uint8_t *pixelRowCopyPtr = pixelBaseCopy + 32 * scan + attrX;
+
+        uint8_t row = *pixelRowPtr;
+        uint8_t rowCopy = *pixelRowCopyPtr;
         // check for changes in the pixel data
         if (row != rowCopy)
         {
           dirty = true;
-          *(pixelBaseCopy + 32 * scan + attrX) = row;
+          *pixelRowCopyPtr = row;
         }
-        uint16_t *pixelAddress = pixelBuffer + 256 * y + attrX * 8;
+
         // Since the ESP32 is a 32-bit processor with a 32-bit memory bus,
         // it's more efficient to write 32-bits at a time. So...calculate
         // pairs of pixels and avoid conditional tests and branches.
@@ -176,7 +195,6 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
-          pixelAddress += 8;
         } else if (row == 0xff) {
           uint32_t u32Clr = tftInkColor | (tftInkColor << 16);
           uint32_t *d32 = (uint32_t *)pixelAddress;
@@ -184,7 +202,6 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
-          pixelAddress += 8;
         } else { // Otherwise use a lookup table to write pairs of pixels
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Lookup[row >> 6];
@@ -192,6 +209,8 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Lookup[(row >> 2) & 3];
           *d32++ = u32Lookup[row & 3];
         }
+
+        pixelAddress += 256;
       }
     }
     if (dirty || firstDraw)
