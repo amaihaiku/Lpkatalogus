@@ -1,0 +1,3 @@
+## 2024-05-18 - Early dirty row check in Renderer
+**Learning:** The ESP32 rendering loop recalculates pixels for every cell (8x8 block) even if the attribute and pixels haven't changed. Calculating the 32-bit `pixelBuffer` representation when we don't end up pushing the pixels (unless `dirty` is true) wastes CPU cycles. We can pre-calculate the dirty state for the entire 8x8 block and skip the `pixelBuffer` translation entirely if it's clean and it's not the first draw.
+**Action:** Move the dirty check calculation (comparing `attr` and `row` data) BEFORE calculating the 32-bit pixel translations, allowing an early `if (!dirty && !firstDraw) continue;` to skip unnecessary loops.
