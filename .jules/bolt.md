@@ -1,0 +1,3 @@
+## 2026-04-14 - Optimize Emulator Memory Access
+**Learning:** Z80 CPU emulation involves frequent memory read/write operations within the hot path. A seemingly minor optimization like avoiding an extra pointer dereference (e.g., caching `MemoryPage->data` directly as an array of `uint8_t*`) yields significant overall performance improvements due to the sheer volume of memory accesses per second in `Z80Run`.
+**Action:** When optimizing emulation or similarly CPU-intensive loops, identify nested pointer indirection inside the most frequently executed macros or inner loops, and cache those addresses directly if their underlying mappings change infrequently (like ROM/RAM banking).
