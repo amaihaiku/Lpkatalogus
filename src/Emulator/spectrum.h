@@ -77,6 +77,10 @@ class Memory {
     // track is a memory bank is dirty
     MemoryPage *currentScreen;
     MemoryPage *mappedMemory[4];
+    // ⚡ Bolt: Cache data and isDirty pointers to avoid pointer dereferencing in the inner loop (Z80Run).
+    // Impact: Reduces CPU cycles per memory read/write operation, increasing emulator speed.
+    uint8_t *mappedMemoryData[4];
+    bool *mappedMemoryIsDirty[4];
     Memory() {
       // allocate space for the rom
       for (int i = 0; i < 2; i++) {
@@ -97,6 +101,10 @@ class Memory {
       mappedMemory[1] = banks[5];
       mappedMemory[2] = banks[2];
       mappedMemory[3] = banks[0];
+      for (int i = 0; i < 4; i++) {
+        mappedMemoryData[i] = mappedMemory[i]->data;
+        mappedMemoryIsDirty[i] = &mappedMemory[i]->isDirty;
+      }
       currentScreen = banks[5];
     }
     // handle the 128k paging
@@ -108,10 +116,14 @@ class Memory {
       hwBank = newHwBank;
       // the lower 3 bits of the bank register determine which ram bank is paged in to the top 16K
       mappedMemory[3] = banks[hwBank & 0x07];
+      mappedMemoryData[3] = mappedMemory[3]->data;
+      mappedMemoryIsDirty[3] = &mappedMemory[3]->isDirty;
       // bit 3 controls the video page - but this is just for the ULA, the CPU always sees the same memory
       currentScreen = banks[hwBank & 0x08 ? 7 : 5];
       // bit 4 of the bank register determines which rom bank is paged in
       mappedMemory[0] = rom[hwBank & 0x10 ? 1 : 0];
+      mappedMemoryData[0] = mappedMemory[0]->data;
+      mappedMemoryIsDirty[0] = &mappedMemory[0]->isDirty;
     }
     inline uint8_t peek(int address) {
       int memoryBank = address >> 14;
