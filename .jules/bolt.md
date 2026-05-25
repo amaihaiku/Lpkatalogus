@@ -1,0 +1,3 @@
+## 2024-05-25 - Bitwise Optimization for Display Loops
+**Learning:** For rendering loops running thousands of times per frame on the ESP32 (like the ZX Spectrum emulator), complex math combinations involving shifts and adds (e.g., `(screenY & B11000000) + (y << 3) + ...`) can be hoisted out. Additionally, where the hoisted base has guaranteed empty lower bits, addition (`+`) can be safely replaced by a bitwise OR (`|`), saving cycles.
+**Action:** When inspecting innermost screen draw loops in C++, hunt for opportunities to hoist calculation bases and replace adds with ORs where applicable. Look for opportunities to precalculate compound bitwise structures (like 32-bit `tftPaperColor | (tftPaperColor << 16)`) into a lookup table.

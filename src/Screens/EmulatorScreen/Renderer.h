@@ -29,6 +29,8 @@ private:
     bool drawReady = true;
     // is this the first draw?
     bool firstDraw = true;
+    uint32_t colorPairLookup[16][16][4];
+    void initColorLookup();
     // flash timer - every 32 frames
     uint16_t flashTimer = 0;
     const int screenWidth = TFT_WIDTH;
@@ -73,6 +75,7 @@ public:
       }
       memset(currentScreenBuffer, 0, 6912);
       m_displaySemaphore = xSemaphoreCreateBinary();
+      initColorLookup();
     }
     void start() {
       xTaskCreatePinnedToCore(displayTask, "displayTask", 8192, this, 1, NULL, 1);
