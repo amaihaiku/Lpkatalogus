@@ -7,6 +7,19 @@
 static const int VOLUME_BAR_HEIGHT = 45;
 static const int MENU_BAR_HEIGHT = 20;
 
+void Renderer::initColorLookup() {
+    for (int i = 0; i < 16; i++) {
+        for (int p = 0; p < 16; p++) {
+            uint16_t tftInkColor = specpal565[i];
+            uint16_t tftPaperColor = specpal565[p];
+            colorPairLookup[i][p][0] = (uint32_t)tftPaperColor | ((uint32_t)tftPaperColor << 16);
+            colorPairLookup[i][p][1] = (uint32_t)tftPaperColor | ((uint32_t)tftInkColor << 16);
+            colorPairLookup[i][p][2] = (uint32_t)tftInkColor | ((uint32_t)tftPaperColor << 16);
+            colorPairLookup[i][p][3] = (uint32_t)tftInkColor | ((uint32_t)tftInkColor << 16);
+        }
+    }
+}
+
 void displayTask(void *pvParameters) {
   Renderer *renderer = (Renderer *)pvParameters;
   while (1)
@@ -143,19 +156,14 @@ void Renderer::drawSpectrumScreen() {
         inkColor = inkColor + 8;
         paperColor = paperColor + 8;
       }
-      uint16_t tftInkColor = specpal565[inkColor];
-      uint16_t tftPaperColor = specpal565[paperColor];
-      const uint32_t u32Lookup[4] = {
-        tftPaperColor | (tftPaperColor << 16), // 00
-        tftPaperColor | (tftInkColor << 16), // 01
-        tftInkColor | (tftPaperColor << 16), // 10
-        tftInkColor | (tftInkColor << 16) // 11
-      };
+
+      int screenYBase = attrY * 8;
+      int scanBase = (screenYBase & B11000000) + ((screenYBase & B111000) >> 3);
+
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = scanBase | (y << 3);
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data
@@ -170,7 +178,7 @@ void Renderer::drawSpectrumScreen() {
         // pairs of pixels and avoid conditional tests and branches.
         // Check for the 2 optimal cases of pure foreground or background
         if (row == 0) {
-          uint32_t u32Clr = tftPaperColor | (tftPaperColor << 16);
+          uint32_t u32Clr = colorPairLookup[inkColor][paperColor][0];
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
@@ -178,7 +186,7 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           pixelAddress += 8;
         } else if (row == 0xff) {
-          uint32_t u32Clr = tftInkColor | (tftInkColor << 16);
+          uint32_t u32Clr = colorPairLookup[inkColor][paperColor][3];
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
@@ -187,10 +195,10 @@ void Renderer::drawSpectrumScreen() {
           pixelAddress += 8;
         } else { // Otherwise use a lookup table to write pairs of pixels
           uint32_t *d32 = (uint32_t *)pixelAddress;
-          *d32++ = u32Lookup[row >> 6];
-          *d32++ = u32Lookup[(row >> 4) & 3];
-          *d32++ = u32Lookup[(row >> 2) & 3];
-          *d32++ = u32Lookup[row & 3];
+          *d32++ = colorPairLookup[inkColor][paperColor][row >> 6];
+          *d32++ = colorPairLookup[inkColor][paperColor][(row >> 4) & 3];
+          *d32++ = colorPairLookup[inkColor][paperColor][(row >> 2) & 3];
+          *d32++ = colorPairLookup[inkColor][paperColor][row & 3];
         }
       }
     }
