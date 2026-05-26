@@ -116,7 +116,39 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
-    bool dirty = false;
+    bool dirty = firstDraw;
+    int screenY = attrY * 8;
+    int scans[8];
+    for (int y = 0; y < 8; y++) {
+      scans[y] = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+    }
+
+    if (!dirty) {
+      for (int attrX = 0; attrX < 256 / 8; attrX++) {
+        uint8_t attr = *(attrBase + 32 * attrY + attrX);
+        if ((attr & B10000000) != 0 && flashTimer < 16) {
+          uint8_t inkColor = attr & B00000111;
+          uint8_t paperColor = (attr & B00111000) >> 3;
+          attr = (attr & B11000000) | (paperColor & B00000111) | ((inkColor << 3) & B00111000);
+        }
+        if (attr != *(attrBaseCopy + 32 * attrY + attrX)) {
+          dirty = true;
+          break;
+        }
+        for (int y = 0; y < 8; y++) {
+          if (*(pixelBase + 32 * scans[y] + attrX) != *(pixelBaseCopy + 32 * scans[y] + attrX)) {
+            dirty = true;
+            break;
+          }
+        }
+        if (dirty) break;
+      }
+    }
+
+    if (!dirty) {
+      continue;
+    }
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
@@ -133,9 +165,9 @@ void Renderer::drawSpectrumScreen() {
         // update the attribute with the new colors - this makes our dirty check work
         attr = (attr & B11000000) | (inkColor & B00000111) | ((paperColor << 3) & B00111000);
       }
+      // Since we know the row is dirty, we just update the copy unconditionally when it differs
       if (attr != *(attrBaseCopy + 32 * attrY + attrX))
       {
-        dirty = true;
         *(attrBaseCopy + 32 * attrY + attrX) = attr;
       }
       if ((attr & B01000000) != 0)
@@ -154,14 +186,11 @@ void Renderer::drawSpectrumScreen() {
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = scans[y];
         uint8_t row = *(pixelBase + 32 * scan + attrX);
-        uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data
-        if (row != rowCopy)
+        if (row != *(pixelBaseCopy + 32 * scan + attrX))
         {
-          dirty = true;
           *(pixelBaseCopy + 32 * scan + attrX) = row;
         }
         uint16_t *pixelAddress = pixelBuffer + 256 * y + attrX * 8;
@@ -176,7 +205,6 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
-          pixelAddress += 8;
         } else if (row == 0xff) {
           uint32_t u32Clr = tftInkColor | (tftInkColor << 16);
           uint32_t *d32 = (uint32_t *)pixelAddress;
@@ -184,7 +212,6 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
-          pixelAddress += 8;
         } else { // Otherwise use a lookup table to write pairs of pixels
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Lookup[row >> 6];
@@ -194,12 +221,10 @@ void Renderer::drawSpectrumScreen() {
         }
       }
     }
-    if (dirty || firstDraw)
-    {
-      if (!isShowingMenu || borderHeight + attrY * 8 < m_tft.height() - VOLUME_BAR_HEIGHT) {
-        m_tft.setWindow(borderWidth, borderHeight + attrY * 8, borderWidth + 255, borderHeight + attrY * 8 + 7);
-        m_tft.pushPixels(pixelBuffer, 256 * 8);
-      }
+
+    if (!isShowingMenu || borderHeight + attrY * 8 < m_tft.height() - VOLUME_BAR_HEIGHT) {
+      m_tft.setWindow(borderWidth, borderHeight + attrY * 8, borderWidth + 255, borderHeight + attrY * 8 + 7);
+      m_tft.pushPixels(pixelBuffer, 256 * 8);
     }
   }
   drawReady = true;
