@@ -1,0 +1,3 @@
+## 2024-05-24 - [C++ Rendering Optimization]
+**Learning:** [In a tight loop expanding 1-bit monochrome pixel data into 16-bit TFT colors, pre-calculating index offsets and introducing a fast 'dirty row' check before committing to the expensive loop logic saves huge amounts of CPU cycles for unmodified regions of the screen. Pre-calculating indexing logic outside of inner loops and fast-pathing to 'continue' significantly boosts performance.]
+**Action:** [Always look for opportunities to fast-fail or skip expensive data transformation/expansion loops when the source data hasn't changed. Check for hoisted variables that are computed repetitively.]
