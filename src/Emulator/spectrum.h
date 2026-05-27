@@ -77,6 +77,8 @@ class Memory {
     // track is a memory bank is dirty
     MemoryPage *currentScreen;
     MemoryPage *mappedMemory[4];
+    uint8_t *mappedMemoryData[4];
+    bool *mappedMemoryIsDirty[4];
     Memory() {
       // allocate space for the rom
       for (int i = 0; i < 2; i++) {
@@ -97,6 +99,10 @@ class Memory {
       mappedMemory[1] = banks[5];
       mappedMemory[2] = banks[2];
       mappedMemory[3] = banks[0];
+      for (int i = 0; i < 4; i++) {
+        mappedMemoryData[i] = mappedMemory[i]->data;
+        mappedMemoryIsDirty[i] = &mappedMemory[i]->isDirty;
+      }
       currentScreen = banks[5];
     }
     // handle the 128k paging
@@ -112,11 +118,16 @@ class Memory {
       currentScreen = banks[hwBank & 0x08 ? 7 : 5];
       // bit 4 of the bank register determines which rom bank is paged in
       mappedMemory[0] = rom[hwBank & 0x10 ? 1 : 0];
+
+      mappedMemoryData[0] = mappedMemory[0]->data;
+      mappedMemoryIsDirty[0] = &mappedMemory[0]->isDirty;
+      mappedMemoryData[3] = mappedMemory[3]->data;
+      mappedMemoryIsDirty[3] = &mappedMemory[3]->isDirty;
     }
     inline uint8_t peek(int address) {
       int memoryBank = address >> 14;
       int bankAddress = address & 0x3fff;
-      return mappedMemory[memoryBank]->data[bankAddress];
+      return mappedMemoryData[memoryBank][bankAddress];
     }
     inline void poke(int address, uint8_t value) {
       int memoryBank = address >> 14;
@@ -124,8 +135,8 @@ class Memory {
       if (memoryBank == 0) {
         // ignore writes to rom
       } else {
-        mappedMemory[memoryBank]->data[bankAddress] = value;
-        mappedMemory[memoryBank]->isDirty = true;
+        mappedMemoryData[memoryBank][bankAddress] = value;
+        *mappedMemoryIsDirty[memoryBank] = true;
       }
     }
     void loadRom(const uint8_t *rom_data, int rom_len) {
