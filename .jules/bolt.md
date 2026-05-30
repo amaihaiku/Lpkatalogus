@@ -1,0 +1,3 @@
+## 2026-04-14 - Precalculation of bitwise math in inner loops
+**Learning:** Found a performance bottleneck in `src/Screens/EmulatorScreen/Renderer.cpp` where scan offset calculations were done in the innermost rendering loop (6144 times per frame). By hoisting the calculation out of the `attrX` loop, we significantly reduced redundant computations to 192 times per frame.
+**Action:** Next time, search for loop invariant calculations, especially in high-frequency rendering functions, and precalculate them or hoist them to an outer loop level when feasible, making sure not to inadvertently skip necessary variable updates (like pointer increments).
