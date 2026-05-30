@@ -117,6 +117,13 @@ void Renderer::drawSpectrumScreen() {
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
     bool dirty = false;
+    // ⚡ Bolt: Precalculate scan offsets to avoid redundant bitwise math in inner loop
+    // Reduces calculations from 6144 (24*32*8) down to 192 (24*8) per frame
+    int screenY = attrY * 8;
+    int scans[8];
+    for (int y = 0; y < 8; y++) {
+      scans[y] = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+    }
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
@@ -154,8 +161,7 @@ void Renderer::drawSpectrumScreen() {
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = scans[y];
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data
