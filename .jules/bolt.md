@@ -1,0 +1,3 @@
+## 2024-05-24 - Pre-calculation of render loop invariants
+**Learning:** Found an opportunity to hoist loop-invariant math calculations (specifically bitwise masks and shifts for screen memory offsets) out of the innermost rendering loop (calculated 6144 times per frame) in `Renderer::drawSpectrumScreen()`.
+**Action:** Always look for complex mathematical address calculations in nested loops that can be partially or fully pre-calculated before the innermost loop to save CPU cycles, especially in rendering or emulation code. Also remember to cast 16-bit integers to 32-bit before shifting left by 16 bits to prevent narrowing conversion compiler warnings or bugs.

@@ -146,16 +146,18 @@ void Renderer::drawSpectrumScreen() {
       uint16_t tftInkColor = specpal565[inkColor];
       uint16_t tftPaperColor = specpal565[paperColor];
       const uint32_t u32Lookup[4] = {
-        tftPaperColor | (tftPaperColor << 16), // 00
-        tftPaperColor | (tftInkColor << 16), // 01
-        tftInkColor | (tftPaperColor << 16), // 10
-        tftInkColor | (tftInkColor << 16) // 11
+        (uint32_t)tftPaperColor | ((uint32_t)tftPaperColor << 16), // 00
+        (uint32_t)tftPaperColor | ((uint32_t)tftInkColor << 16), // 01
+        (uint32_t)tftInkColor | ((uint32_t)tftPaperColor << 16), // 10
+        (uint32_t)tftInkColor | ((uint32_t)tftInkColor << 16) // 11
       };
+      // Pre-calculate base address calculation for inner y loop
+      int screenY = attrY * 8;
+      int scanBase = (screenY & B11000000) + ((screenY & B111000) >> 3);
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = scanBase + (y << 3);
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data
@@ -170,7 +172,7 @@ void Renderer::drawSpectrumScreen() {
         // pairs of pixels and avoid conditional tests and branches.
         // Check for the 2 optimal cases of pure foreground or background
         if (row == 0) {
-          uint32_t u32Clr = tftPaperColor | (tftPaperColor << 16);
+          uint32_t u32Clr = (uint32_t)tftPaperColor | ((uint32_t)tftPaperColor << 16);
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
@@ -178,7 +180,7 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           pixelAddress += 8;
         } else if (row == 0xff) {
-          uint32_t u32Clr = tftInkColor | (tftInkColor << 16);
+          uint32_t u32Clr = (uint32_t)tftInkColor | ((uint32_t)tftInkColor << 16);
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
