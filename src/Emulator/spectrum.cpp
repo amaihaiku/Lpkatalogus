@@ -77,7 +77,8 @@ int ZXSpectrum::runForFrame(AudioOutput *audioOutput, FILE *audioFile)
     else
     {
       // otherwise we need to populate it with the correct attribute color
-      uint8_t attr = *(attrBase + 32 * (i - 64) / 8);
+      // Optimization: 32 * (i - 64) / 8 can be simplified to (i - 64) * 4, or (i - 64) << 2
+      uint8_t attr = *(attrBase + ((i - 64) << 2));
       hwopt.portFF = attr;
     }
     // run for 224 cycles
@@ -96,7 +97,8 @@ int ZXSpectrum::runForFrame(AudioOutput *audioOutput, FILE *audioFile)
     for (int i = 0; i < 312; i++)
     {
       // max output from the AYSound is 158 (I think...), scale it up to 255 and combine with the buzzer output
-      audioBuffer[i] = std::max((int) audioBuffer[i], (int) AySound::SamplebufAY[i] * 255 / 158);
+      // Optimization: replace division with bitshift (x * 255 / 158 is approx x * 413 / 256)
+      audioBuffer[i] = std::max((int) audioBuffer[i], (int) AySound::SamplebufAY[i] * 413 >> 8);
     }
   }
   if (audioFile != NULL) {
