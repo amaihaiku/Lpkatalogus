@@ -31,7 +31,7 @@ private:
 
 public:
     OnScreenKeyboard(Display &display, HDMIDisplay *hdmiDisplay, AudioOutput *audioOutput, IFiles *files, OnKeyPress onKeyPress, std::function<void()> onClose)
-        : Screen(*display, hdmiDisplay, audioOutput, files), _onKeyPress(onKeyPress), _onClose(onClose)
+        : Screen(display, hdmiDisplay, audioOutput, files), _onKeyPress(onKeyPress), _onClose(onClose)
     {
     }
 

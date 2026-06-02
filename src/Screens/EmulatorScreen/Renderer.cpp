@@ -116,6 +116,38 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
+    bool isRowDirty = false;
+    if (!firstDraw) {
+      for (int attrX = 0; attrX < 32; attrX++) {
+        uint8_t attr = *(attrBase + 32 * attrY + attrX);
+        if ((attr & B10000000) != 0 && flashTimer < 16) {
+          uint8_t inkColor = attr & B00000111;
+          uint8_t paperColor = (attr & B00111000) >> 3;
+          attr = (attr & B11000000) | (paperColor & B00000111) | ((inkColor << 3) & B00111000);
+        }
+        if (attr != *(attrBaseCopy + 32 * attrY + attrX)) {
+          isRowDirty = true;
+          break;
+        }
+      }
+      if (!isRowDirty) {
+        int screenY = attrY * 8;
+        for (int y = 0; y < 8; y++) {
+          int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+          if (memcmp(pixelBase + 32 * scan, pixelBaseCopy + 32 * scan, 32) != 0) {
+            isRowDirty = true;
+            break;
+          }
+        }
+      }
+    } else {
+      isRowDirty = true;
+    }
+
+    if (!isRowDirty) {
+      continue;
+    }
+
     bool dirty = false;
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
@@ -146,10 +178,10 @@ void Renderer::drawSpectrumScreen() {
       uint16_t tftInkColor = specpal565[inkColor];
       uint16_t tftPaperColor = specpal565[paperColor];
       const uint32_t u32Lookup[4] = {
-        tftPaperColor | (tftPaperColor << 16), // 00
-        tftPaperColor | (tftInkColor << 16), // 01
-        tftInkColor | (tftPaperColor << 16), // 10
-        tftInkColor | (tftInkColor << 16) // 11
+        (uint32_t)tftPaperColor | ((uint32_t)tftPaperColor << 16), // 00
+        (uint32_t)tftPaperColor | ((uint32_t)tftInkColor << 16), // 01
+        (uint32_t)tftInkColor | ((uint32_t)tftPaperColor << 16), // 10
+        (uint32_t)tftInkColor | ((uint32_t)tftInkColor << 16) // 11
       };
       for (int y = 0; y < 8; y++)
       {
@@ -170,7 +202,7 @@ void Renderer::drawSpectrumScreen() {
         // pairs of pixels and avoid conditional tests and branches.
         // Check for the 2 optimal cases of pure foreground or background
         if (row == 0) {
-          uint32_t u32Clr = tftPaperColor | (tftPaperColor << 16);
+          uint32_t u32Clr = (uint32_t)tftPaperColor | ((uint32_t)tftPaperColor << 16);
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
@@ -178,7 +210,7 @@ void Renderer::drawSpectrumScreen() {
           *d32++ = u32Clr;
           pixelAddress += 8;
         } else if (row == 0xff) {
-          uint32_t u32Clr = tftInkColor | (tftInkColor << 16);
+          uint32_t u32Clr = (uint32_t)tftInkColor | ((uint32_t)tftInkColor << 16);
           uint32_t *d32 = (uint32_t *)pixelAddress;
           *d32++ = u32Clr;
           *d32++ = u32Clr;
