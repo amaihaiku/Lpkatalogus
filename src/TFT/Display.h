@@ -40,7 +40,11 @@ struct Font
 class Display
 {
 public:
-  Display(int width, int height) : _width(width), _height(height) {}
+  Display(int width, int height) : _width(width), _height(height) {
+    for (int i = 0; i < 128; i++) {
+      glyphCacheValid[i] = false;
+    }
+  }
   static inline uint16_t swapBytes(uint16_t val)
   {
     return (val >> 8) | (val << 8);
@@ -118,4 +122,7 @@ protected:
 
   // The current font
   Font currentFont;
+
+  Glyph glyphCache[128];
+  bool glyphCacheValid[128];
 };

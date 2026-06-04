@@ -176,6 +176,10 @@ void Display::loadFont(const uint8_t *fontData)
   uint32_t mboxY = readUInt32(fontData + 12);
   currentFont.ascent = readUInt32(fontData + 16);
   currentFont.descent = readUInt32(fontData + 20);
+
+  for (int i = 0; i < 128; i++) {
+    glyphCacheValid[i] = false;
+  }
 }
 
 void Display::setTextColor(uint16_t color, uint16_t bgColor)
@@ -186,6 +190,10 @@ void Display::setTextColor(uint16_t color, uint16_t bgColor)
 
 Glyph Display::getGlyphData(uint32_t unicode)
 {
+  if (unicode < 128 && glyphCacheValid[unicode]) {
+    return glyphCache[unicode];
+  }
+
   const uint8_t *fontPtr = currentFont.fontData + 24;
   const uint8_t *bitmapPtr = currentFont.fontData + 24 + currentFont.gCount * 28;
 
@@ -208,6 +216,10 @@ Glyph Display::getGlyphData(uint32_t unicode)
       glyph.dX = dX;
       glyph.dY = dY;
       glyph.bitmap = bitmapPtr;
+      if (unicode < 128) {
+        glyphCache[unicode] = glyph;
+        glyphCacheValid[unicode] = true;
+      }
       return glyph;
     }
 
@@ -218,7 +230,12 @@ Glyph Display::getGlyphData(uint32_t unicode)
 
   // Return default glyph if not found
   Serial.printf("Glyph not found: %c\n", unicode);
-  return getGlyphData(' ');
+  Glyph defaultGlyph = getGlyphData(' ');
+  if (unicode < 128) {
+    glyphCache[unicode] = defaultGlyph;
+    glyphCacheValid[unicode] = true;
+  }
+  return defaultGlyph;
 }
 
 void Display::drawPixel(uint16_t color, int x, int y)
