@@ -1,0 +1,3 @@
+## 2024-05-24 - [Optimizing TFT Redraws in Emulation]
+**Learning:** In the ZX Spectrum emulator renderer, decoding attributes and pixels from memory into a TFT-compatible 16-bit format is very CPU intensive. It was being done for the entire screen every frame, even when most of the screen is static, because the dirty check was bundled in the same loop.
+**Action:** Always decouple change-detection (dirty checking) from expensive decoding loops when dealing with screen buffers. Perform a fast pass to check for changes against shadow memory, and only run the expensive decoding logic on the blocks/rows that actually changed.
