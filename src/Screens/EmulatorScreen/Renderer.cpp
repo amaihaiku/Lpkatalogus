@@ -116,7 +116,23 @@ void Renderer::drawSpectrumScreen() {
   uint8_t *pixelBaseCopy = screenBuffer;
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
-    bool dirty = false;
+    bool dirty = firstDraw;
+    // Early out: check if the entire row (32 chars) has any dirty pixels/attributes
+    if (!dirty) {
+      for (int attrX = 0; attrX < 32; attrX++) {
+        uint8_t attr = *(attrBase + 32 * attrY + attrX);
+        if ((attr & B10000000) != 0 && flashTimer < 16) { dirty = true; break; }
+        if (attr != *(attrBaseCopy + 32 * attrY + attrX)) { dirty = true; break; }
+        int screenY = attrY * 8;
+        for (int y = 0; y < 8; y++) {
+          int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+          if (*(pixelBase + 32 * scan + attrX) != *(pixelBaseCopy + 32 * scan + attrX)) { dirty = true; break; }
+        }
+        if (dirty) break;
+      }
+    }
+    if (!dirty) continue;
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
@@ -146,10 +162,10 @@ void Renderer::drawSpectrumScreen() {
       uint16_t tftInkColor = specpal565[inkColor];
       uint16_t tftPaperColor = specpal565[paperColor];
       const uint32_t u32Lookup[4] = {
-        tftPaperColor | (tftPaperColor << 16), // 00
-        tftPaperColor | (tftInkColor << 16), // 01
-        tftInkColor | (tftPaperColor << 16), // 10
-        tftInkColor | (tftInkColor << 16) // 11
+        (uint32_t)(tftPaperColor | (tftPaperColor << 16)), // 00
+        (uint32_t)(tftPaperColor | (tftInkColor << 16)), // 01
+        (uint32_t)(tftInkColor | (tftPaperColor << 16)), // 10
+        (uint32_t)(tftInkColor | (tftInkColor << 16)) // 11
       };
       for (int y = 0; y < 8; y++)
       {
