@@ -1,0 +1,3 @@
+## 2025-07-23 - Emulator Rendering Optimization
+**Learning:** Found a performance bottleneck in the ZX Spectrum emulator rendering loop (`src/Screens/EmulatorScreen/Renderer.cpp`). Previously, the code iterated over each 8x8 character cell (256/8 = 32 per row) and checked for dirtiness cell-by-cell. By adding an "early out" check at the row level (`attrY`), we can quickly scan if any cell in the entire row has changed attributes or pixels. If not, we skip the inner cell-level rendering loop entirely for that row.
+**Action:** Apply this row-level short-circuiting pattern to similar tile-based or scanline-based rendering loops.
