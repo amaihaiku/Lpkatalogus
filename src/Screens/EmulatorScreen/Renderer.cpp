@@ -117,6 +117,41 @@ void Renderer::drawSpectrumScreen() {
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
     bool dirty = false;
+
+    // FAST PATH: Check if the row (32 attributes wide) is completely clean
+    // This provides a measurable speedup for games with mostly static backgrounds
+    if (!firstDraw) {
+      bool rowClean = true;
+      for (int attrX = 0; attrX < 32; attrX++) {
+        uint8_t attr = *(attrBase + 32 * attrY + attrX);
+        if ((attr & B10000000) != 0 && flashTimer < 16) {
+          uint8_t inkColor = attr & B00000111;
+          uint8_t paperColor = (attr & B00111000) >> 3;
+          attr = (attr & B11000000) | (paperColor & B00000111) | ((inkColor << 3) & B00111000);
+        }
+        if (attr != *(attrBaseCopy + 32 * attrY + attrX)) {
+          rowClean = false;
+          break;
+        }
+      }
+
+      if (rowClean) {
+        int screenY = attrY * 8;
+        int baseScan = (screenY & B11000000) + ((screenY & B111000) >> 3);
+        for (int y = 0; y < 8; y++) {
+          int scan = baseScan + (y << 3);
+          if (memcmp(pixelBase + 32 * scan, pixelBaseCopy + 32 * scan, 32) != 0) {
+            rowClean = false;
+            break;
+          }
+        }
+      }
+
+      if (rowClean) {
+        continue;
+      }
+    }
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
