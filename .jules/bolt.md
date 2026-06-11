@@ -1,0 +1,3 @@
+## 2024-05-24 - [ESP32 Rendering Optimization]
+**Learning:** [In a constrained environment like the ESP32 ZX Spectrum emulator, reducing redundant pixel lookup computations inside the rendering loop can significantly enhance performance. The emulator draws screens using an 8x8 attribute grid containing the color and ink info combined with pixel rows. By checking if the 8 bytes of an 8x8 block have changed prior to evaluating the final 32-bit pixel blocks, we can skip unnecessary operations for static screen regions.]
+**Action:** [When optimizing rendering engines, especially those with independent pixel-and-attribute layers, prioritize short-circuit checks to bypass computationally heavy loops on clean (unchanged) regions.]
