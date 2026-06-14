@@ -198,7 +198,13 @@ void Renderer::drawSpectrumScreen() {
     {
       if (!isShowingMenu || borderHeight + attrY * 8 < m_tft.height() - VOLUME_BAR_HEIGHT) {
         m_tft.setWindow(borderWidth, borderHeight + attrY * 8, borderWidth + 255, borderHeight + attrY * 8 + 7);
-        m_tft.pushPixels(pixelBuffer, 256 * 8);
+        // ⚡ Bolt: Wait for any previous DMA transfer to complete before we start the next one.
+        // This prevents the DMA controller from reading our buffer while we're overwriting it,
+        // which avoids visual tearing/corruption on screen.
+        m_tft.dmaWait();
+        // ⚡ Bolt: We push pixels using DMA to offload screen refresh from the main CPU,
+        // increasing framerate since rendering can happen concurrently with emulation processing.
+        m_tft.pushPixelsDMA(pixelBuffer, 256 * 8);
       }
     }
   }
