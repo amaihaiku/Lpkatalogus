@@ -117,6 +117,9 @@ void Renderer::drawSpectrumScreen() {
   for (int attrY = 0; attrY < 192 / 8; attrY++)
   {
     bool dirty = false;
+    int screenY = attrY * 8;
+    int baseScan = (screenY & B11000000) + ((screenY & B111000) >> 3);
+
     for (int attrX = 0; attrX < 256 / 8; attrX++)
     {
       // read the value of the attribute
@@ -154,8 +157,7 @@ void Renderer::drawSpectrumScreen() {
       for (int y = 0; y < 8; y++)
       {
         // read the value of the pixels
-        int screenY = attrY * 8;
-        int scan = (screenY & B11000000) + (y << 3) + ((screenY & B111000) >> 3);
+        int scan = baseScan + (y << 3);
         uint8_t row = *(pixelBase + 32 * scan + attrX);
         uint8_t rowCopy = *(pixelBaseCopy + 32 * scan + attrX);
         // check for changes in the pixel data
