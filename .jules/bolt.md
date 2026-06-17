@@ -1,0 +1,3 @@
+## 2025-02-18 - True DMA Performance Gains require Double-Buffering
+**Learning:** When attempting to use DMA for asynchronous TFT display transfers (e.g., `pushPixelsDMA`), using a single shared buffer provides zero parallelization benefit. Calling `dmaWait()` immediately in the next loop iteration to prevent corruption stalls the CPU anyway.
+**Action:** Always implement double-buffering when utilizing DMA so the CPU can prepare the next buffer while the DMA controller transfers the current one. This ensures true parallelization between the CPU and DMA controller without visual tearing or memory corruption.

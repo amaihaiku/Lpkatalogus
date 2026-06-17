@@ -14,7 +14,8 @@ private:
     AudioOutput *m_audioOutput = nullptr;
     HDMIDisplay *m_HDMIDisplay = nullptr;
     // holding area for pixels that are sent to the tft display
-    uint16_t *pixelBuffer = nullptr;
+    uint16_t *pixelBuffers[2] = {nullptr, nullptr};
+    int currentPixelBuffer = 0;
     // what's currently on the spectrum screen
     uint8_t *currentScreenBuffer = nullptr;
     // what's currently on the TFT screen
@@ -57,8 +58,9 @@ private:
     uint32_t frameCount = 0;
 public:
     Renderer(Display &tft, AudioOutput *audioOutput, HDMIDisplay *hdmiDisplay): m_tft(tft), m_audioOutput(audioOutput), m_HDMIDisplay(hdmiDisplay) {
-      // enough for a row of 8 pixels
-      pixelBuffer = (uint16_t *)malloc(256 * 8 * sizeof(uint16_t));
+      // enough for a row of 8 pixels, double buffered for DMA
+      pixelBuffers[0] = (uint16_t *)heap_caps_malloc(256 * 8 * sizeof(uint16_t), MALLOC_CAP_DMA);
+      pixelBuffers[1] = (uint16_t *)heap_caps_malloc(256 * 8 * sizeof(uint16_t), MALLOC_CAP_DMA);
       // the spectrum screen is 256x192 pixels
       screenBuffer = (uint8_t *)malloc(6912);
       if (screenBuffer == NULL)
@@ -79,7 +81,8 @@ public:
       isRunning = true;
     }
     ~Renderer() {
-      free(pixelBuffer);
+      if (pixelBuffers[0]) heap_caps_free(pixelBuffers[0]);
+      if (pixelBuffers[1]) heap_caps_free(pixelBuffers[1]);
       free(screenBuffer);
       free(currentScreenBuffer);
     }
