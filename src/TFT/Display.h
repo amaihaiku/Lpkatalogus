@@ -60,7 +60,7 @@ public:
   {
     sendPixels(data, len);
   }
-  virtual void pushPixelsDMA(uint16_t *data, uint32_t len)
+  virtual void pushPixelsDMA(const uint16_t *data, uint32_t len)
   {
     sendPixels(data, len);
   }
