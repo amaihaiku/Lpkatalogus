@@ -37,6 +37,16 @@ public:
     transaction.user = this;
   }
 
+  bool setPixelsDMA(const uint16_t *data, int numPixels)
+  {
+    memset(&transaction, 0, sizeof(transaction));
+    isCommand = false;
+    transaction.length = numPixels * 16; // Data length in bits
+    transaction.tx_buffer = (void *)data;
+    transaction.user = this;
+    return true;
+  }
+
   bool setData(const uint8_t *data, int len)
   {
     memset(&transaction, 0, sizeof(transaction));
@@ -148,6 +158,18 @@ void TFTDisplay::sendPixels(const uint16_t *data, int numPixels)
     uint32_t len = std::min(DMA_BUFFER_SIZE, bytes - i);
     dmaWait();
     _transaction->setPixels(data + i / 2, len / 2);
+    sendTransaction(_transaction);
+  }
+}
+
+void TFTDisplay::pushPixelsDMA(uint16_t *data, uint32_t len)
+{
+  int bytes = len * 2;
+  for (uint32_t i = 0; i < bytes; i += DMA_BUFFER_SIZE)
+  {
+    uint32_t chunk_len = std::min((uint32_t)DMA_BUFFER_SIZE, bytes - i);
+    dmaWait();
+    _transaction->setPixelsDMA(data + i / 2, chunk_len / 2);
     sendTransaction(_transaction);
   }
 }
