@@ -164,7 +164,7 @@ void Renderer::drawSpectrumScreen() {
           dirty = true;
           *(pixelBaseCopy + 32 * scan + attrX) = row;
         }
-        uint16_t *pixelAddress = pixelBuffer + 256 * y + attrX * 8;
+        uint16_t *pixelAddress = pixelBuffers[currentBuffer] + 256 * y + attrX * 8;
         // Since the ESP32 is a 32-bit processor with a 32-bit memory bus,
         // it's more efficient to write 32-bits at a time. So...calculate
         // pairs of pixels and avoid conditional tests and branches.
@@ -198,7 +198,8 @@ void Renderer::drawSpectrumScreen() {
     {
       if (!isShowingMenu || borderHeight + attrY * 8 < m_tft.height() - VOLUME_BAR_HEIGHT) {
         m_tft.setWindow(borderWidth, borderHeight + attrY * 8, borderWidth + 255, borderHeight + attrY * 8 + 7);
-        m_tft.pushPixels(pixelBuffer, 256 * 8);
+        m_tft.pushPixelsDMA(pixelBuffers[currentBuffer], 256 * 8);
+        currentBuffer = 1 - currentBuffer;
       }
     }
   }
