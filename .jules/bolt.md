@@ -1,0 +1,4 @@
+## 2024-06-23 - Renderer CPU optimization
+**Learning:** In the Spectrum emulator renderer, pixel calculation from palette indexes was happening for every 8x8 block on screen every frame, even if the block had not changed. Calculating this takes massive CPU cycles (and triggers many redundant DMA TFT writes) for screens that are largely static.
+**Action:** Split the loop logic to first quickly identify changed rows (using byte comparisons), and only if a row is dirty, run the expensive pixel decoding and pushPixels logic for that entire row. Also precalculate the 8  indices once per row instead of recalculating for every 8-pixel column.
+**Action:** Split the loop logic to first quickly identify changed rows (using byte comparisons), and only if a row is dirty, run the expensive pixel decoding and pushPixels logic for that entire row. Also precalculate the 8 scanLines indices once per row instead of recalculating for every 8-pixel column.
