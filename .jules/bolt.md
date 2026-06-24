@@ -1,0 +1,3 @@
+## 2024-06-24 - [Double Buffering for Display DMA]
+**Learning:** When using Direct Memory Access (DMA) for asynchronous TFT display transfers (e.g., `pushPixelsDMA`), using a single shared buffer provides zero parallelization benefit. The CPU ends up waiting for the DMA transfer to finish (`dmaWait()`) before it can draw the next frame to avoid visual tearing or memory corruption.
+**Action:** True DMA performance gains in this architecture require double-buffering and allocating the buffers with `heap_caps_malloc(..., MALLOC_CAP_DMA)` to ensure they are accessible by the DMA controller. This allows the CPU to calculate the next frame in one buffer while the DMA controller pushes the other buffer to the display.

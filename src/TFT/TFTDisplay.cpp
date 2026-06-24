@@ -152,6 +152,17 @@ void TFTDisplay::sendPixels(const uint16_t *data, int numPixels)
   }
 }
 
+void TFTDisplay::pushPixelsDMA(uint16_t *data, uint32_t len)
+{
+  dmaWait();
+  memset(&_transaction->transaction, 0, sizeof(spi_transaction_t));
+  _transaction->isCommand = false;
+  _transaction->transaction.length = len * 16;
+  _transaction->transaction.tx_buffer = data;
+  _transaction->transaction.user = _transaction;
+  sendTransaction(_transaction);
+}
+
 void TFTDisplay::sendData(const uint8_t *data, int length)
 {
   for (uint32_t i = 0; i < length; i += DMA_BUFFER_SIZE)

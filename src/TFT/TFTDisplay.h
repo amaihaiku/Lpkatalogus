@@ -62,6 +62,7 @@ class TFTDisplay : public Display
 public:
   TFTDisplay(gpio_num_t cs, gpio_num_t dc, gpio_num_t rst, gpio_num_t bl, int width, int height);
   void setWindow(int32_t x0, int32_t y0, int32_t x1, int32_t y1);
+  void pushPixelsDMA(uint16_t *data, uint32_t len) override;
   void dmaWait();
   void startWrite() {
     xSemaphoreTake(mDisplayLock, portMAX_DELAY);
