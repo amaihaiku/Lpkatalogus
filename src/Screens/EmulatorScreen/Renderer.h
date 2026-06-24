@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../../TFT/Display.h"
 #include "../../Serial.h"
+#include <esp_heap_caps.h>
 
 void displayTask(void *pvParameters);
 
@@ -14,7 +15,8 @@ private:
     AudioOutput *m_audioOutput = nullptr;
     HDMIDisplay *m_HDMIDisplay = nullptr;
     // holding area for pixels that are sent to the tft display
-    uint16_t *pixelBuffer = nullptr;
+    uint16_t *pixelBuffer[2] = {nullptr, nullptr};
+    uint8_t currentBuffer = 0;
     // what's currently on the spectrum screen
     uint8_t *currentScreenBuffer = nullptr;
     // what's currently on the TFT screen
@@ -58,7 +60,8 @@ private:
 public:
     Renderer(Display &tft, AudioOutput *audioOutput, HDMIDisplay *hdmiDisplay): m_tft(tft), m_audioOutput(audioOutput), m_HDMIDisplay(hdmiDisplay) {
       // enough for a row of 8 pixels
-      pixelBuffer = (uint16_t *)malloc(256 * 8 * sizeof(uint16_t));
+      pixelBuffer[0] = (uint16_t *)heap_caps_malloc(256 * 8 * sizeof(uint16_t), MALLOC_CAP_DMA);
+      pixelBuffer[1] = (uint16_t *)heap_caps_malloc(256 * 8 * sizeof(uint16_t), MALLOC_CAP_DMA);
       // the spectrum screen is 256x192 pixels
       screenBuffer = (uint8_t *)malloc(6912);
       if (screenBuffer == NULL)
@@ -79,7 +82,8 @@ public:
       isRunning = true;
     }
     ~Renderer() {
-      free(pixelBuffer);
+      heap_caps_free(pixelBuffer[0]);
+      heap_caps_free(pixelBuffer[1]);
       free(screenBuffer);
       free(currentScreenBuffer);
     }
