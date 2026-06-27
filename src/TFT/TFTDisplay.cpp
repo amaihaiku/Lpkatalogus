@@ -113,15 +113,18 @@ TFTDisplay::TFTDisplay(gpio_num_t cs, gpio_num_t dc, gpio_num_t rst, gpio_num_t 
 
   ESP_ERROR_CHECK(spi_bus_add_device(SPI2_HOST, &devcfg, &spi));
 
-  _transaction = new SPITransactionInfo(DMA_BUFFER_SIZE);
+  _transactions[0] = new SPITransactionInfo(DMA_BUFFER_SIZE);
+  _transactions[1] = new SPITransactionInfo(DMA_BUFFER_SIZE);
   Serial.println("TFTDisplay created");
 }
 
 void TFTDisplay::sendCmd(uint8_t cmd)
 {
+  SPITransactionInfo *trans = _transactions[_currentTransaction];
+  trans->setCommand(cmd);
   dmaWait();
-  _transaction->setCommand(cmd);
-  sendTransaction(_transaction);
+  sendTransaction(trans);
+  _currentTransaction = (_currentTransaction + 1) % 2;
 }
 
 void TFTDisplay::sendTransaction(SPITransactionInfo *trans)
@@ -146,9 +149,11 @@ void TFTDisplay::sendPixels(const uint16_t *data, int numPixels)
   for (uint32_t i = 0; i < bytes; i += DMA_BUFFER_SIZE)
   {
     uint32_t len = std::min(DMA_BUFFER_SIZE, bytes - i);
+    SPITransactionInfo *trans = _transactions[_currentTransaction];
+    trans->setPixels(data + i / 2, len / 2);
     dmaWait();
-    _transaction->setPixels(data + i / 2, len / 2);
-    sendTransaction(_transaction);
+    sendTransaction(trans);
+    _currentTransaction = (_currentTransaction + 1) % 2;
   }
 }
 
@@ -157,9 +162,11 @@ void TFTDisplay::sendData(const uint8_t *data, int length)
   for (uint32_t i = 0; i < length; i += DMA_BUFFER_SIZE)
   {
     uint32_t len = std::min(DMA_BUFFER_SIZE, length - i);
+    SPITransactionInfo *trans = _transactions[_currentTransaction];
+    trans->setData(data + i, len);
     dmaWait();
-    _transaction->setData(data + i, len);
-    sendTransaction(_transaction);
+    sendTransaction(trans);
+    _currentTransaction = (_currentTransaction + 1) % 2;
   }
 }
 
@@ -168,9 +175,11 @@ void TFTDisplay::sendColor(uint16_t color, int numPixels)
   for (int i = 0; i < numPixels; i += DMA_BUFFER_SIZE >> 1)
   {
     int len = std::min(numPixels - i, int(DMA_BUFFER_SIZE >> 1));
+    SPITransactionInfo *trans = _transactions[_currentTransaction];
+    trans->setColor(color, len);
     dmaWait();
-    _transaction->setColor(color, len);
-    sendTransaction(_transaction);
+    sendTransaction(trans);
+    _currentTransaction = (_currentTransaction + 1) % 2;
   }
 }
 

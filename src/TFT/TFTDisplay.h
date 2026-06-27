@@ -82,7 +82,14 @@ protected:
   void sendColor(uint16_t color, int numPixels);
 
   volatile bool isBusy = false;
-  SPITransactionInfo *_transaction;
+
+  // ⚡ Bolt Performance Optimization:
+  // We use two SPITransactionInfo instances (double-buffering) so the CPU can prepare
+  // the next data buffer while the DMA engine is asynchronously transmitting the previous one.
+  // This drastically reduces CPU idle time waiting for SPI transfers to finish.
+  SPITransactionInfo *_transactions[2];
+  uint8_t _currentTransaction = 0;
+
   void sendTransaction(SPITransactionInfo *trans);
 
   gpio_num_t cs;

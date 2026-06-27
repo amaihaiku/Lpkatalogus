@@ -28,33 +28,33 @@ void EmulatorScreen::triggerLoadTape()
   }
   machine->pause();
   renderer->pause();
-  if (!mm_files->isAvailable())
+  if (!m_files->isAvailable())
   {
     ErrorScreen *errorScreen = new ErrorScreen(
         no_sd_card_error,
         m_tft,
-        mm_hdmiDisplay,
-        mm_audioOutput,
-        mm_files);
-    mm_navigationStack->push(errorScreen);
+        m_hdmiDisplay,
+        m_audioOutput,
+        m_files);
+    m_navigationStack->push(errorScreen);
     return;
   }
   drawBusy();
-  FileLetterCountVector fileLetterCounts = mm_files->getFileLetters("/", tap_extensions);
+  FileLetterCountVector fileLetterCounts = m_files->getFileLetters("/", tap_extensions);
   if (fileLetterCounts.size() == 0)
   {
     ErrorScreen *errorScreen = new ErrorScreen(
         nom_files_error,
         m_tft,
-        mm_hdmiDisplay,
-        mm_audioOutput,
-        mm_files);
-    mm_navigationStack->push(errorScreen);
+        m_hdmiDisplay,
+        m_audioOutput,
+        m_files);
+    m_navigationStack->push(errorScreen);
     return;
   }
-  AlphabetPicker<GameFilePickerScreen> *alphabetPicker = new AlphabetPicker<GameFilePickerScreen>("Select Tape File", mm_files, m_tft, mm_hdmiDisplay, mm_audioOutput, "/", tap_extensions);
+  AlphabetPicker<GameFilePickerScreen> *alphabetPicker = new AlphabetPicker<GameFilePickerScreen>("Select Tape File", m_files, m_tft, m_hdmiDisplay, m_audioOutput, "/", tap_extensions);
   alphabetPicker->setItems(fileLetterCounts);
-  mm_navigationStack->push(alphabetPicker);
+  m_navigationStack->push(alphabetPicker);
 }
 
 EmulatorScreen::EmulatorScreen(Display &tft, HDMIDisplay *hdmiDisplay, AudioOutput *audioOutput, IFiles *files)
@@ -132,15 +132,15 @@ void EmulatorScreen::pressKey(SpecKeys key)
 {
     // Custom mapping: long press SPACE (or triggered directly) to open OSK
     if (key == SPECKEY_SPACE) {
-        OnScreenKeyboard *osk = new OnScreenKeyboard(&m_tft, m_hdmiDisplay, m_audioOutput, m_files, [&](SpecKeys k, bool d){
+        OnScreenKeyboard *osk = new OnScreenKeyboard(m_tft, m_hdmiDisplay, m_audioOutput, m_files, [&](SpecKeys k, bool d){
              machine->updateKey(k, d);
         }, [&](){
-             mmm_navigationStack->pop(); // pop OSK
+             m_navigationStack->pop(); // pop OSK
              renderer->forceRedraw();
 
 
         });
-        mmm_navigationStack->push(osk);
+        m_navigationStack->push(osk);
         return;
     }
 
@@ -191,21 +191,21 @@ void EmulatorScreen::pressKey(SpecKeys key)
     else if (key == SPECKEY_2) {
       renderer->isShowingMenu = false;
       // show the save snapshot UI
-      mm_navigationStack->push(new SaveSnapshotScreen(m_tft, mm_hdmiDisplay, mm_audioOutput, machine->getMachine(), mm_files));
+      m_navigationStack->push(new SaveSnapshotScreen(m_tft, m_hdmiDisplay, m_audioOutput, machine->getMachine(), m_files));
     } else if (key == SPECKEY_P) {
       renderer->isShowingMenu = false;
-      mm_navigationStack->push(new PokeScreen(m_tft, mm_hdmiDisplay, mm_audioOutput, machine->getMachine()));
+      m_navigationStack->push(new PokeScreen(m_tft, m_hdmiDisplay, m_audioOutput, machine->getMachine()));
     } else if (key == SPECKEY_SPACE || key == SPECKEY_ENTER) {
       renderer->isShowingMenu = false;
       machine->resume();
       renderer->forceRedraw();
 
     } else if (key == SPECKEY_5) {
-    mm_audioOutput->volumeDown();
+      m_audioOutput->volumeDown();
       renderer->forceRedraw();
 
     } else if (key == SPECKEY_8) {
-      mm_audioOutput->volumeUp();
+      m_audioOutput->volumeUp();
       renderer->forceRedraw();
 
     }
