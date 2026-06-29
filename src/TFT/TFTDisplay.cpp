@@ -215,3 +215,18 @@ void TFTDisplay::dmaWait()
     isBusy = false;
   }
 }
+
+void TFTDisplay::pushPixelsDMA(uint16_t *data, uint32_t len)
+{
+  if (len * 2 > DMA_BUFFER_SIZE) {
+    sendPixels(data, len);
+    return;
+  }
+  dmaWait();
+  _transaction->isCommand = false;
+  memset(&_transaction->transaction, 0, sizeof(_transaction->transaction));
+  _transaction->transaction.length = len * 16;
+  _transaction->transaction.tx_buffer = data;
+  _transaction->transaction.user = _transaction;
+  sendTransaction(_transaction);
+}
