@@ -1,0 +1,3 @@
+## 2024-06-25 - Zero Parallelization Overhead With DMA
+**Learning:** When attempting to use DMA (`pushPixelsDMA`) for display transfers, a single shared buffer provides zero parallelization benefit because the DMA controller will read actively changing memory leading to visual tearing or corruption unless `dmaWait()` is called before drawing the next frame. True DMA performance gains in this architecture require double-buffering.
+**Action:** Allocate buffers with `heap_caps_malloc(..., MALLOC_CAP_DMA)`, duplicate the buffers, and toggle between them, calling `pushPixelsDMA` on one while CPU calculates the next row on the other, appending a single `dmaWait()` at the end of the frame.

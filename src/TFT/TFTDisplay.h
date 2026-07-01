@@ -79,6 +79,7 @@ protected:
   void sendData(const uint8_t *data, int len);
   void sendPixel(uint16_t color);
   void sendPixels(const uint16_t *data, int numPixels);
+  void pushPixelsDMA(uint16_t *data, uint32_t len) override;
   void sendColor(uint16_t color, int numPixels);
 
   volatile bool isBusy = false;
