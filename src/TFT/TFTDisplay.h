@@ -82,7 +82,8 @@ protected:
   void sendColor(uint16_t color, int numPixels);
 
   volatile bool isBusy = false;
-  SPITransactionInfo *_transaction;
+  SPITransactionInfo *_transactions[2];
+  uint8_t _currentTransactionIdx = 0;
   void sendTransaction(SPITransactionInfo *trans);
 
   gpio_num_t cs;
