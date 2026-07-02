@@ -113,15 +113,16 @@ TFTDisplay::TFTDisplay(gpio_num_t cs, gpio_num_t dc, gpio_num_t rst, gpio_num_t 
 
   ESP_ERROR_CHECK(spi_bus_add_device(SPI2_HOST, &devcfg, &spi));
 
-  _transaction = new SPITransactionInfo(DMA_BUFFER_SIZE);
+  _transactions[0] = new SPITransactionInfo(DMA_BUFFER_SIZE);
+  _transactions[1] = new SPITransactionInfo(DMA_BUFFER_SIZE);
   Serial.println("TFTDisplay created");
 }
 
 void TFTDisplay::sendCmd(uint8_t cmd)
 {
   dmaWait();
-  _transaction->setCommand(cmd);
-  sendTransaction(_transaction);
+  _transactions[_currentTransactionIdx]->setCommand(cmd);
+  sendTransaction(_transactions[_currentTransactionIdx]);
 }
 
 void TFTDisplay::sendTransaction(SPITransactionInfo *trans)
@@ -146,9 +147,17 @@ void TFTDisplay::sendPixels(const uint16_t *data, int numPixels)
   for (uint32_t i = 0; i < bytes; i += DMA_BUFFER_SIZE)
   {
     uint32_t len = std::min(DMA_BUFFER_SIZE, bytes - i);
+    uint8_t nextIdx = 1 - _currentTransactionIdx;
+
+    // Set pixels on the inactive buffer (this copies data while DMA might be busy)
+    _transactions[nextIdx]->setPixels(data + i / 2, len / 2);
+
+    // Wait for the active buffer to finish sending
     dmaWait();
-    _transaction->setPixels(data + i / 2, len / 2);
-    sendTransaction(_transaction);
+
+    // Swap buffers and send
+    _currentTransactionIdx = nextIdx;
+    sendTransaction(_transactions[_currentTransactionIdx]);
   }
 }
 
@@ -157,9 +166,15 @@ void TFTDisplay::sendData(const uint8_t *data, int length)
   for (uint32_t i = 0; i < length; i += DMA_BUFFER_SIZE)
   {
     uint32_t len = std::min(DMA_BUFFER_SIZE, length - i);
+    uint8_t nextIdx = 1 - _currentTransactionIdx;
+
+    // Set data on the inactive buffer
+    _transactions[nextIdx]->setData(data + i, len);
+
     dmaWait();
-    _transaction->setData(data + i, len);
-    sendTransaction(_transaction);
+
+    _currentTransactionIdx = nextIdx;
+    sendTransaction(_transactions[_currentTransactionIdx]);
   }
 }
 
@@ -168,9 +183,15 @@ void TFTDisplay::sendColor(uint16_t color, int numPixels)
   for (int i = 0; i < numPixels; i += DMA_BUFFER_SIZE >> 1)
   {
     int len = std::min(numPixels - i, int(DMA_BUFFER_SIZE >> 1));
+    uint8_t nextIdx = 1 - _currentTransactionIdx;
+
+    // Set color on the inactive buffer
+    _transactions[nextIdx]->setColor(color, len);
+
     dmaWait();
-    _transaction->setColor(color, len);
-    sendTransaction(_transaction);
+
+    _currentTransactionIdx = nextIdx;
+    sendTransaction(_transactions[_currentTransactionIdx]);
   }
 }
 
