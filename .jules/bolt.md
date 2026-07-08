@@ -1,0 +1,3 @@
+## 2024-05-19 - DMA Double Buffering vs Single Buffering Bottleneck
+**Learning:** Using `pushPixels` or asynchronous DMA transfers with a single shared buffer provides zero parallelization benefit. The CPU is forced to wait for the DMA transfer to complete before it can write the next chunk of pixels, effectively making the async call blocking. True DMA performance gains in this ESP32 codebase require allocating dual alternating buffers (double buffering) using `heap_caps_malloc(..., MALLOC_CAP_DMA)`.
+**Action:** Always allocate array states for buffers (`[2]`) and alternate the pointer reference per iteration when implementing asynchronous DMA display transfers.
