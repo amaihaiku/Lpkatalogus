@@ -64,6 +64,16 @@ public:
     return setData((const uint8_t *)data, numPixels * 2);
   }
 
+  bool setPixelsDMA(const uint16_t *data, int numPixels)
+  {
+    memset(&transaction, 0, sizeof(transaction));
+    isCommand = false;
+    transaction.length = numPixels * 16;
+    transaction.tx_buffer = (void *)data;
+    transaction.user = this;
+    return true;
+  }
+
   bool setColor(uint16_t color, int numPixels)
   {
     uint16_t *pixels = (uint16_t *)buffer;
@@ -150,6 +160,23 @@ void TFTDisplay::sendPixels(const uint16_t *data, int numPixels)
     _transaction->setPixels(data + i / 2, len / 2);
     sendTransaction(_transaction);
   }
+}
+
+void TFTDisplay::sendPixelsDMA(const uint16_t *data, int numPixels)
+{
+  int bytes = numPixels * 2;
+  for (uint32_t i = 0; i < bytes; i += DMA_BUFFER_SIZE)
+  {
+    uint32_t len = std::min(DMA_BUFFER_SIZE, bytes - i);
+    dmaWait();
+    _transaction->setPixelsDMA(data + i / 2, len / 2);
+    sendTransaction(_transaction);
+  }
+}
+
+void TFTDisplay::pushPixelsDMA(uint16_t *data, uint32_t len)
+{
+  sendPixelsDMA(data, len);
 }
 
 void TFTDisplay::sendData(const uint8_t *data, int length)
